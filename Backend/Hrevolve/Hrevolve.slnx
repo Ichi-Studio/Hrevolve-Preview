@@ -1,4 +1,8 @@
 <Solution>
   <Project Path="../Entities/Entities.csproj" />
+  <Project Path="../Extensions/Extensions.csproj" />
+  <Project Path="../Implements/Implements.csproj" />
+  <Project Path="../Interfaces/Interfaces.csproj" />
+  <Project Path="../Models/Models.csproj" />
   <Project Path="Hrevolve.csproj" />
 </Solution>
