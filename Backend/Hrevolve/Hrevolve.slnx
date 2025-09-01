@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="../AiBuilder/AiBuilder.csproj" Id="e08671be-ca5a-4bc0-8bf4-8d4c10a16c4b" />
   <Project Path="../Commonds/Commons.csproj" />
   <Project Path="../Entities/Entities.csproj" />
   <Project Path="../Implements/Implements.csproj" />
