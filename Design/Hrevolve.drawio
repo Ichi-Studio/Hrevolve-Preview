@@ -1,0 +1,189 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/28.1.2 Chrome/138.0.7204.243 Electron/37.4.0 Safari/537.36" version="28.1.2">
+  <diagram name="第 1 页" id="tSXByCg00_xJDb6gqhgs">
+    <mxGraphModel dx="786" dy="1685" grid="1" gridSize="10" guides="1" tooltips="1" connect="0" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-3" value="&lt;span style=&quot;font-size: 24px;&quot;&gt;&lt;b&gt;登錄/注冊&lt;/b&gt;&lt;/span&gt;" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="30" y="30" width="190" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-17" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="Za0owc5TCO8NN_Pa0zSE-14" target="Za0owc5TCO8NN_Pa0zSE-16" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-20" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="Za0owc5TCO8NN_Pa0zSE-14" target="Za0owc5TCO8NN_Pa0zSE-16" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="Za0owc5TCO8NN_Pa0zSE-14" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="270" y="210" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-14" value="&lt;b&gt;&lt;font style=&quot;font-size: 15px;&quot;&gt;注冊&lt;/font&gt;&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="80" y="150" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-16" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;手機號注冊&lt;br&gt;&lt;/b&gt;&lt;/span&gt;" style="whiteSpace=wrap;html=1;rounded=1;" parent="1" vertex="1">
+          <mxGeometry x="270" y="120" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-22" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;郵箱注冊&lt;br&gt;&lt;/b&gt;&lt;/span&gt;" style="whiteSpace=wrap;html=1;rounded=1;" parent="1" vertex="1">
+          <mxGeometry x="270" y="180" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-23" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;多 語 言&lt;/b&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="72" y="-140" width="870" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-24" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;Bots Help&lt;/b&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="72" y="-30" width="870" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-38" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="Za0owc5TCO8NN_Pa0zSE-25" target="Za0owc5TCO8NN_Pa0zSE-29" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-39" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="Za0owc5TCO8NN_Pa0zSE-25" target="Za0owc5TCO8NN_Pa0zSE-31" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-40" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="Za0owc5TCO8NN_Pa0zSE-25" target="Za0owc5TCO8NN_Pa0zSE-33" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-59" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="Za0owc5TCO8NN_Pa0zSE-25" target="Za0owc5TCO8NN_Pa0zSE-58" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-25" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;登錄&lt;/b&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="89" y="370" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-29" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;掃碼登錄&lt;/b&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="279" y="310" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-41" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="Za0owc5TCO8NN_Pa0zSE-29" target="Za0owc5TCO8NN_Pa0zSE-35" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="339" y="300" />
+              <mxPoint x="410" y="300" />
+              <mxPoint x="410" y="360" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-42" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" parent="1" source="Za0owc5TCO8NN_Pa0zSE-29" target="Za0owc5TCO8NN_Pa0zSE-34" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="339" y="300" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-31" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;賬號密碼&lt;/b&gt;&lt;/span&gt;" style="whiteSpace=wrap;html=1;rounded=1;" parent="1" vertex="1">
+          <mxGeometry x="279" y="370" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-43" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="Za0owc5TCO8NN_Pa0zSE-33" target="Za0owc5TCO8NN_Pa0zSE-37" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-44" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="Za0owc5TCO8NN_Pa0zSE-33" target="Za0owc5TCO8NN_Pa0zSE-36" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-46" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="Za0owc5TCO8NN_Pa0zSE-33" target="Za0owc5TCO8NN_Pa0zSE-45" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-33" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;單點登錄&lt;/b&gt;&lt;/span&gt;" style="whiteSpace=wrap;html=1;rounded=1;" parent="1" vertex="1">
+          <mxGeometry x="279" y="430" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-34" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;Wechat&lt;/b&gt;&lt;/span&gt;" style="whiteSpace=wrap;html=1;rounded=1;" parent="1" vertex="1">
+          <mxGeometry x="449" y="270" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-35" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;WhatsApp&lt;/b&gt;&lt;/span&gt;" style="whiteSpace=wrap;html=1;rounded=1;" parent="1" vertex="1">
+          <mxGeometry x="449" y="330" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-36" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;github&lt;/b&gt;&lt;/span&gt;" style="whiteSpace=wrap;html=1;rounded=1;" parent="1" vertex="1">
+          <mxGeometry x="449" y="390" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-37" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;Microsoft&lt;/b&gt;&lt;/span&gt;" style="whiteSpace=wrap;html=1;rounded=1;" parent="1" vertex="1">
+          <mxGeometry x="449" y="450" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-45" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;Google&lt;/b&gt;&lt;/span&gt;" style="whiteSpace=wrap;html=1;rounded=1;" parent="1" vertex="1">
+          <mxGeometry x="449" y="510" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-50" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="Za0owc5TCO8NN_Pa0zSE-47" target="Za0owc5TCO8NN_Pa0zSE-48" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-51" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="Za0owc5TCO8NN_Pa0zSE-47" target="Za0owc5TCO8NN_Pa0zSE-49" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m5WdwTgZdEXieET8EBoD-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="Za0owc5TCO8NN_Pa0zSE-47" target="m5WdwTgZdEXieET8EBoD-1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-47" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;忘記密碼&lt;/b&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="109" y="730" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-48" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;郵箱驗證&lt;/b&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="279" y="690" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-49" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;手機驗證&lt;/b&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="279" y="780" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-55" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="Za0owc5TCO8NN_Pa0zSE-53" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="810" y="150" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-53" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;速率限制&lt;br&gt;3次后15分鐘后才能繼續登錄&lt;br&gt;&lt;/b&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="610" y="120" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-56" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;防止暴力破解&lt;/b&gt;&lt;/span&gt;" style="whiteSpace=wrap;html=1;rounded=1;" parent="1" vertex="1">
+          <mxGeometry x="810" y="120" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-63" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="Za0owc5TCO8NN_Pa0zSE-58" target="Za0owc5TCO8NN_Pa0zSE-62" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-64" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="Za0owc5TCO8NN_Pa0zSE-58" target="Za0owc5TCO8NN_Pa0zSE-61" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-58" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;驗證碼&lt;/b&gt;&lt;/span&gt;" style="whiteSpace=wrap;html=1;rounded=1;" parent="1" vertex="1">
+          <mxGeometry x="279" y="490" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-61" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;手機號&lt;/b&gt;&lt;/span&gt;" style="whiteSpace=wrap;html=1;rounded=1;" parent="1" vertex="1">
+          <mxGeometry x="449" y="630" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-62" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;郵箱&lt;/b&gt;&lt;/span&gt;" style="whiteSpace=wrap;html=1;rounded=1;" parent="1" vertex="1">
+          <mxGeometry x="447" y="570" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-70" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" parent="1" source="Za0owc5TCO8NN_Pa0zSE-67" target="Za0owc5TCO8NN_Pa0zSE-69" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-71" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="Za0owc5TCO8NN_Pa0zSE-67" target="Za0owc5TCO8NN_Pa0zSE-68" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-67" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;MFA(雙因素認證)&lt;br&gt;需確認是否開啓&lt;/b&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="629" y="315" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-68" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;WebAuthn/FIDO2&lt;/b&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="799" y="355" width="121" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-69" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;TOTP(Google)&lt;/b&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="799" y="255" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-72" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;驗證登錄賬號密碼格式&lt;/b&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="629" y="460" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-74" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;防爬蟲和Bots&lt;br&gt;Captcha&lt;/b&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="810" y="460" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Za0owc5TCO8NN_Pa0zSE-76" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;OWASO ZAP&lt;/b&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="629" y="620" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="m5WdwTgZdEXieET8EBoD-1" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;更改密碼&lt;/b&gt;&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="109" y="850" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="m5WdwTgZdEXieET8EBoD-3" value="&lt;span style=&quot;font-size: 24px;&quot;&gt;&lt;b&gt;通知系統&lt;/b&gt;&lt;/span&gt;" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="1051" y="30" width="190" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="m5WdwTgZdEXieET8EBoD-4" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;Email&lt;/b&gt;&lt;/span&gt;" style="whiteSpace=wrap;html=1;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="140" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="m5WdwTgZdEXieET8EBoD-5" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;SMS短信&lt;/b&gt;&lt;/span&gt;" style="whiteSpace=wrap;html=1;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="240" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="m5WdwTgZdEXieET8EBoD-6" value="&lt;span style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;應用内通知&lt;/b&gt;&lt;/span&gt;" style="whiteSpace=wrap;html=1;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="340" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="m5WdwTgZdEXieET8EBoD-7" value="&lt;span style=&quot;font-size: 24px;&quot;&gt;&lt;b&gt;公司設置&lt;/b&gt;&lt;/span&gt;" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="1430" y="30" width="190" height="90" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
