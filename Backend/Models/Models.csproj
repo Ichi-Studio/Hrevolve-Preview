@@ -14,4 +14,9 @@
     <ProjectReference Include="..\Entities\Entities.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Admin\" />
+    <Folder Include="User\" />
+  </ItemGroup>
+
 </Project>

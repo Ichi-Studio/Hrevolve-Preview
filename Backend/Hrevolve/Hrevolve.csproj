@@ -10,6 +10,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Controllers\A\**" />
+    <Content Remove="Controllers\A\**" />
+    <EmbeddedResource Remove="Controllers\A\**" />
+    <None Remove="Controllers\A\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Autofac" Version="8.4.0" />
     <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="10.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.8" />
@@ -20,6 +27,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Implements\Implements.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Controllers\Admin\" />
+    <Folder Include="Controllers\User\" />
   </ItemGroup>
 
 </Project>
