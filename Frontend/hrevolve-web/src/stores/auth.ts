@@ -31,13 +31,13 @@ export const useAuthStore = defineStore('auth', () => {
     
     token.value = response.data.accessToken;
     refreshToken.value = response.data.refreshToken;
-    user.value = response.data.user;
-    tenantId.value = response.data.user.tenantId;
     
     // 持久化存储
     localStorage.setItem('token', response.data.accessToken);
     localStorage.setItem('refreshToken', response.data.refreshToken);
-    localStorage.setItem('tenantId', response.data.user.tenantId);
+    
+    // 登录成功后获取用户信息
+    await fetchUser();
   };
   
   // 获取当前用户信息
@@ -46,8 +46,18 @@ export const useAuthStore = defineStore('auth', () => {
     
     try {
       const response = await authApi.getCurrentUser();
-      user.value = response.data;
+      // 后端返回的字段名是驼峰式
+      user.value = {
+        id: response.data.userId,
+        username: response.data.username,
+        email: response.data.email,
+        tenantId: response.data.tenantId,
+        employeeId: response.data.employeeId,
+        permissions: response.data.permissions || [],
+        roles: [],
+      } as User;
       tenantId.value = response.data.tenantId;
+      localStorage.setItem('tenantId', response.data.tenantId || '');
     } catch {
       // Token无效，清除登录状态
       logout();

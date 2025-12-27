@@ -8,6 +8,8 @@ import router from './router';
 import pinia from './stores';
 import i18n from './i18n';
 
+// 先加载 Element Plus 暗色主题变量，再加载自定义样式
+import './styles/element-dark.scss';
 import './styles/main.scss';
 
 const app = createApp(App);

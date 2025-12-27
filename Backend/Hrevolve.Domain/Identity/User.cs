@@ -154,7 +154,7 @@ public class ExternalLogin
 {
     public Guid Id { get; private set; } = Guid.NewGuid();
     public Guid UserId { get; private set; }
-    public string Provider { get; private set; } = null!; // Google, Microsoft, WeChat, DingTalk
+    public string Provider { get; private set; } = null!; // Google, Microsoft, WeChat, WhatsApp
     public string ProviderKey { get; private set; } = null!;
     public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
     

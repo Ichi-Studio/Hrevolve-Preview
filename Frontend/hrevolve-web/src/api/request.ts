@@ -22,8 +22,8 @@ service.interceptors.request.use(
       config.headers.Authorization = `Bearer ${authStore.token}`;
     }
     
-    // 添加租户ID
-    if (authStore.tenantId) {
+    // 添加租户ID（只有有效值才发送）
+    if (authStore.tenantId && authStore.tenantId.trim()) {
       config.headers['X-Tenant-Id'] = authStore.tenantId;
     }
     
@@ -37,17 +37,16 @@ service.interceptors.request.use(
 
 // 响应拦截器
 service.interceptors.response.use(
-  (response: AxiosResponse<ApiResponse>) => {
-    const res = response.data;
-    
-    // 如果响应成功
-    if (res.success) {
-      return response;
-    }
-    
-    // 业务错误
-    ElMessage.error(res.message || '请求失败');
-    return Promise.reject(new Error(res.message || '请求失败'));
+  (response: AxiosResponse) => {
+    // 后端直接返回数据，包装成统一格式
+    return {
+      ...response,
+      data: {
+        success: true,
+        data: response.data,
+        message: 'success'
+      }
+    };
   },
   (error) => {
     const { response } = error;

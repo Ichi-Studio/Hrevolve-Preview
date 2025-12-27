@@ -48,6 +48,9 @@ public static class DependencyInjection
         // 工作单元
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         
+        // 数据库初始化器
+        services.AddScoped<DbInitializer>();
+        
         // 仓储
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         services.AddScoped<IEmployeeRepository, EmployeeRepository>();

@@ -1,0 +1,52 @@
+// ============================================
+// Hrevolve 黑金渐变主题变量
+// ============================================
+
+// 主色调 - 金色系
+$gold-primary: #D4AF37;
+$gold-light: #F4D03F;
+$gold-dark: #B8860B;
+$gold-gradient: linear-gradient(135deg, #D4AF37 0%, #F4D03F 50%, #B8860B 100%);
+$gold-gradient-hover: linear-gradient(135deg, #F4D03F 0%, #D4AF37 50%, #DAA520 100%);
+
+// 背景色 - 黑色系
+$bg-dark: #0D0D0D;
+$bg-darker: #080808;
+$bg-card: #1A1A1A;
+$bg-card-hover: #242424;
+$bg-sidebar: linear-gradient(180deg, #0D0D0D 0%, #1A1A1A 100%);
+$bg-header: rgba(13, 13, 13, 0.95);
+$bg-main: #121212;
+
+// 文字颜色
+$text-primary: #FFFFFF;
+$text-secondary: rgba(255, 255, 255, 0.85);
+$text-tertiary: rgba(255, 255, 255, 0.65);
+$text-disabled: rgba(255, 255, 255, 0.45);
+$text-gold: #D4AF37;
+
+// 边框颜色
+$border-color: rgba(212, 175, 55, 0.2);
+$border-color-light: rgba(212, 175, 55, 0.1);
+$border-color-hover: rgba(212, 175, 55, 0.4);
+
+// 阴影
+$shadow-gold: 0 4px 20px rgba(212, 175, 55, 0.15);
+$shadow-gold-hover: 0 8px 30px rgba(212, 175, 55, 0.25);
+$shadow-card: 0 4px 12px rgba(0, 0, 0, 0.5);
+
+// 状态颜色
+$success: #52C41A;
+$warning: #FAAD14;
+$error: #FF4D4F;
+$info: #1890FF;
+
+// 圆角
+$radius-sm: 6px;
+$radius-md: 8px;
+$radius-lg: 12px;
+$radius-xl: 16px;
+
+// 过渡
+$transition-fast: 0.2s ease;
+$transition-normal: 0.3s ease;

@@ -3,12 +3,30 @@ using Hrevolve.Application;
 using Hrevolve.Infrastructure;
 using Hrevolve.Web.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// 配置 Kestrel 启用 HTTP/3
+builder.WebHost.ConfigureKestrel(options =>
+{
+    // HTTP 端口（开发环境）
+    options.ListenLocalhost(5224, listenOptions =>
+    {
+        listenOptions.Protocols = HttpProtocols.Http1AndHttp2;
+    });
+    
+    // HTTPS 端口，支持 HTTP/1.1、HTTP/2 和 HTTP/3
+    options.ListenLocalhost(5225, listenOptions =>
+    {
+        listenOptions.Protocols = HttpProtocols.Http1AndHttp2AndHttp3;
+        listenOptions.UseHttps();
+    });
+});
 
 // 配置Serilog
 Log.Logger = new LoggerConfiguration()
@@ -103,6 +121,14 @@ builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 
+// 数据库初始化和种子数据
+using (var scope = app.Services.CreateScope())
+{
+    var dbInitializer = scope.ServiceProvider.GetRequiredService<Hrevolve.Infrastructure.Persistence.DbInitializer>();
+    await dbInitializer.InitializeAsync();
+    await dbInitializer.SeedAsync();
+}
+
 // 配置中间件管道
 if (app.Environment.IsDevelopment())
 {
@@ -113,20 +139,29 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+// CORS必须在其他中间件之前
+app.UseCors("AllowAll");
+
+// 添加 Alt-Svc 头，通知客户端支持 HTTP/3
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.AltSvc = "h3=\":5225\"; ma=86400";
+    await next();
+});
+
 // 全局异常处理
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-// 多租户中间件
+app.UseHttpsRedirection();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+// 多租户中间件（必须在认证之后，这样才能从JWT获取租户ID）
 app.UseMiddleware<TenantMiddleware>();
 
 // 当前用户中间件
 app.UseMiddleware<CurrentUserMiddleware>();
-
-app.UseHttpsRedirection();
-app.UseCors("AllowAll");
-
-app.UseAuthentication();
-app.UseAuthorization();
 
 app.MapControllers();
 

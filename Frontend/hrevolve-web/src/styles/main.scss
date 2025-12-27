@@ -1,5 +1,10 @@
-// 全局样式
+// ============================================
+// Hrevolve 黑金渐变主题 - 全局样式
+// ============================================
 
+@use './variables.scss' as *;
+
+// 基础重置
 * {
   box-sizing: border-box;
 }
@@ -11,23 +16,384 @@ html, body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: $bg-main;
+  color: $text-primary;
 }
 
 #app {
   height: 100%;
+  background-color: $bg-main;
 }
 
-// Element Plus 覆盖
+// ============================================
+// Element Plus 黑金主题覆盖
+// ============================================
+
+// 卡片
 .el-card {
-  border-radius: 8px;
+  background: $bg-card;
+  border: 1px solid $border-color;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-card;
+  transition: all $transition-normal;
+  
+  &:hover {
+    border-color: $border-color-hover;
+    box-shadow: $shadow-gold;
+  }
+  
+  .el-card__header {
+    border-bottom: 1px solid $border-color;
+    color: $text-primary;
+    background: linear-gradient(90deg, rgba(212, 175, 55, 0.1) 0%, transparent 100%);
+  }
+  
+  .el-card__body {
+    color: $text-secondary;
+  }
 }
 
+// 按钮
 .el-button {
-  border-radius: 6px;
+  border-radius: $radius-sm;
+  transition: all $transition-fast;
+  
+  &--primary {
+    background: $gold-gradient;
+    border: none;
+    color: $bg-dark;
+    font-weight: 600;
+    
+    &:hover, &:focus {
+      background: $gold-gradient-hover;
+      box-shadow: $shadow-gold;
+    }
+    
+    &:active {
+      background: linear-gradient(135deg, $gold-dark 0%, $gold-primary 100%);
+    }
+    
+    &.is-disabled {
+      background: rgba(212, 175, 55, 0.3);
+      color: $text-disabled;
+    }
+  }
+  
+  &--default {
+    background: transparent;
+    border: 1px solid $border-color;
+    color: $text-gold;
+    
+    &:hover, &:focus {
+      border-color: $gold-primary;
+      color: $gold-light;
+      background: rgba(212, 175, 55, 0.1);
+    }
+  }
+  
+  &--text {
+    color: $text-gold;
+    
+    &:hover {
+      color: $gold-light;
+      background: rgba(212, 175, 55, 0.1);
+    }
+  }
 }
 
-.el-input__wrapper {
-  border-radius: 6px;
+// 输入框
+.el-input {
+  .el-input__wrapper {
+    background: rgba(30, 30, 30, 0.9) !important;
+    border: 1px solid $border-color;
+    border-radius: $radius-sm;
+    box-shadow: none !important;
+    transition: all $transition-fast;
+    
+    &:hover {
+      border-color: $border-color-hover;
+      background: rgba(40, 40, 40, 0.9) !important;
+    }
+    
+    &.is-focus {
+      border-color: $gold-primary;
+      box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2) !important;
+      background: rgba(40, 40, 40, 0.95) !important;
+    }
+    
+    .el-input__inner {
+      color: $text-primary !important;
+      background: transparent !important;
+      -webkit-text-fill-color: $text-primary !important;
+      
+      &::placeholder {
+        color: $text-disabled;
+        -webkit-text-fill-color: $text-disabled;
+      }
+    }
+    
+    .el-input__prefix, .el-input__suffix {
+      color: $text-tertiary;
+    }
+  }
+}
+
+// 选择器
+.el-select {
+  .el-select__wrapper {
+    background: $bg-card;
+    border: 1px solid $border-color;
+    box-shadow: none;
+    
+    &:hover {
+      border-color: $border-color-hover;
+    }
+    
+    &.is-focused {
+      border-color: $gold-primary;
+      box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+    }
+  }
+}
+
+// 下拉菜单
+.el-select-dropdown,
+.el-dropdown-menu {
+  background: $bg-card;
+  border: 1px solid $border-color;
+  
+  .el-select-dropdown__item,
+  .el-dropdown-menu__item {
+    color: $text-secondary;
+    
+    &:hover {
+      background: rgba(212, 175, 55, 0.1);
+      color: $text-gold;
+    }
+    
+    &.is-selected, &.selected {
+      color: $gold-primary;
+      background: rgba(212, 175, 55, 0.15);
+    }
+  }
+}
+
+// 表格
+.el-table {
+  background: transparent;
+  
+  &::before {
+    background-color: $border-color;
+  }
+  
+  th.el-table__cell {
+    background: rgba(212, 175, 55, 0.08);
+    color: $text-gold;
+    border-bottom: 1px solid $border-color;
+  }
+  
+  td.el-table__cell {
+    border-bottom: 1px solid $border-color-light;
+  }
+  
+  tr {
+    background: transparent;
+    
+    &:hover > td.el-table__cell {
+      background: rgba(212, 175, 55, 0.05);
+    }
+  }
+  
+  .el-table__body-wrapper {
+    background: $bg-card;
+  }
+  
+  .el-table__empty-text {
+    color: $text-tertiary;
+  }
+}
+
+// 分页
+.el-pagination {
+  .el-pager li {
+    background: transparent;
+    color: $text-secondary;
+    
+    &:hover {
+      color: $gold-primary;
+    }
+    
+    &.is-active {
+      background: $gold-gradient;
+      color: $bg-dark;
+    }
+  }
+  
+  .btn-prev, .btn-next {
+    background: transparent;
+    color: $text-secondary;
+    
+    &:hover {
+      color: $gold-primary;
+    }
+  }
+}
+
+// 标签
+.el-tag {
+  border-radius: $radius-sm;
+  
+  &--primary {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: rgba(212, 175, 55, 0.3);
+    color: $gold-primary;
+  }
+  
+  &--success {
+    background: rgba(82, 196, 26, 0.15);
+    border-color: rgba(82, 196, 26, 0.3);
+    color: $success;
+  }
+  
+  &--warning {
+    background: rgba(250, 173, 20, 0.15);
+    border-color: rgba(250, 173, 20, 0.3);
+    color: $warning;
+  }
+  
+  &--danger {
+    background: rgba(255, 77, 79, 0.15);
+    border-color: rgba(255, 77, 79, 0.3);
+    color: $error;
+  }
+}
+
+// 对话框
+.el-dialog {
+  background: $bg-card;
+  border: 1px solid $border-color;
+  border-radius: $radius-lg;
+  
+  .el-dialog__header {
+    border-bottom: 1px solid $border-color;
+    background: linear-gradient(90deg, rgba(212, 175, 55, 0.1) 0%, transparent 100%);
+    
+    .el-dialog__title {
+      color: $text-gold;
+    }
+  }
+  
+  .el-dialog__body {
+    color: $text-secondary;
+  }
+  
+  .el-dialog__footer {
+    border-top: 1px solid $border-color;
+  }
+}
+
+// 消息提示
+.el-message {
+  background: $bg-card;
+  border: 1px solid $border-color;
+  
+  &--success {
+    border-color: rgba(82, 196, 26, 0.3);
+  }
+  
+  &--warning {
+    border-color: rgba(250, 173, 20, 0.3);
+  }
+  
+  &--error {
+    border-color: rgba(255, 77, 79, 0.3);
+  }
+}
+
+// 表单
+.el-form-item__label {
+  color: $text-secondary;
+}
+
+// 复选框
+.el-checkbox {
+  .el-checkbox__label {
+    color: $text-secondary;
+  }
+  
+  .el-checkbox__inner {
+    background: transparent;
+    border-color: $border-color;
+  }
+  
+  &.is-checked {
+    .el-checkbox__inner {
+      background: $gold-primary;
+      border-color: $gold-primary;
+    }
+    
+    .el-checkbox__label {
+      color: $text-gold;
+    }
+  }
+}
+
+// 分割线
+.el-divider {
+  border-color: $border-color;
+  
+  .el-divider__text {
+    background: $bg-card;
+    color: $text-tertiary;
+  }
+}
+
+// 面包屑
+.el-breadcrumb {
+  .el-breadcrumb__item {
+    .el-breadcrumb__inner {
+      color: $text-tertiary;
+      
+      &:hover {
+        color: $gold-primary;
+      }
+    }
+    
+    &:last-child .el-breadcrumb__inner {
+      color: $text-gold;
+    }
+  }
+  
+  .el-breadcrumb__separator {
+    color: $text-disabled;
+  }
+}
+
+// 头像
+.el-avatar {
+  background: $gold-gradient;
+  color: $bg-dark;
+}
+
+// 提示
+.el-tooltip__popper {
+  background: $bg-card !important;
+  border: 1px solid $border-color;
+  color: $text-secondary;
+}
+
+// 日期选择器
+.el-date-editor {
+  .el-input__wrapper {
+    background: $bg-card;
+    border: 1px solid $border-color;
+  }
+}
+
+.el-picker-panel {
+  background: $bg-card;
+  border: 1px solid $border-color;
+  color: $text-secondary;
 }
 
 // 滚动条样式
@@ -37,25 +403,29 @@ html, body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #c1c1c1;
+  background: linear-gradient(180deg, $gold-dark 0%, $gold-primary 100%);
   border-radius: 3px;
   
   &:hover {
-    background-color: #a8a8a8;
+    background: $gold-light;
   }
 }
 
 ::-webkit-scrollbar-track {
-  background-color: #f1f1f1;
+  background: $bg-darker;
 }
 
+// ============================================
 // 工具类
+// ============================================
 .text-center { text-align: center; }
 .text-right { text-align: right; }
-.text-primary { color: #1890ff; }
-.text-success { color: #52c41a; }
-.text-warning { color: #faad14; }
-.text-danger { color: #ff4d4f; }
+.text-gold { color: $gold-primary; }
+.text-primary { color: $text-primary; }
+.text-secondary { color: $text-secondary; }
+.text-success { color: $success; }
+.text-warning { color: $warning; }
+.text-danger { color: $error; }
 
 .mt-8 { margin-top: 8px; }
 .mt-16 { margin-top: 16px; }
@@ -63,3 +433,17 @@ html, body {
 .mb-8 { margin-bottom: 8px; }
 .mb-16 { margin-bottom: 16px; }
 .mb-24 { margin-bottom: 24px; }
+
+// 金色渐变文字
+.gradient-text {
+  background: $gold-gradient;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+// 金色边框发光效果
+.glow-border {
+  border: 1px solid $gold-primary;
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+}

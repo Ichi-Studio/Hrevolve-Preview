@@ -126,45 +126,50 @@ onMounted(() => {
 
 <template>
   <div class="assistant-container">
-    <el-card class="chat-card">
+    <div class="chat-card">
       <!-- 头部 -->
-      <template #header>
-        <div class="chat-header">
-          <div class="header-left">
-            <el-icon :size="24" color="#1890ff"><ChatDotRound /></el-icon>
-            <span class="title">{{ t('assistant.title') }}</span>
+      <div class="chat-header">
+        <div class="header-left">
+          <div class="header-icon">
+            <el-icon :size="20"><ChatDotRound /></el-icon>
           </div>
-          <el-button
-            text
-            type="danger"
-            :icon="Delete"
-            @click="clearHistory"
-          >
-            {{ t('assistant.clearHistory') }}
-          </el-button>
+          <div class="header-info">
+            <span class="title">{{ t('assistant.title') }}</span>
+            <span class="subtitle">7×24小时智能服务</span>
+          </div>
         </div>
-      </template>
+        <el-button
+          class="clear-btn"
+          text
+          :icon="Delete"
+          @click="clearHistory"
+        >
+          {{ t('assistant.clearHistory') }}
+        </el-button>
+      </div>
       
       <!-- 消息区域 -->
       <div ref="chatContainerRef" class="chat-messages">
         <!-- 欢迎消息 -->
         <div v-if="messages.length === 0" class="welcome-message">
-          <div class="welcome-icon">🤖</div>
+          <div class="welcome-avatar">
+            <span>🤖</span>
+          </div>
           <h3>您好！我是Hrevolve HR智能助手</h3>
           <p>我可以帮您查询假期余额、薪资信息、考勤记录，也可以协助您提交请假申请。</p>
           
           <div class="suggestions">
             <p class="suggestions-title">{{ t('assistant.suggestions') }}</p>
             <div class="suggestion-list">
-              <el-button
+              <button
                 v-for="suggestion in suggestions"
                 :key="suggestion.text"
                 class="suggestion-btn"
                 @click="sendMessage(suggestion.text)"
               >
                 <span class="suggestion-icon">{{ suggestion.icon }}</span>
-                {{ suggestion.text }}
-              </el-button>
+                <span class="suggestion-text">{{ suggestion.text }}</span>
+              </button>
             </div>
           </div>
         </div>
@@ -196,64 +201,100 @@ onMounted(() => {
       
       <!-- 输入区域 -->
       <div class="chat-input">
-        <el-input
-          v-model="inputMessage"
-          :placeholder="t('assistant.placeholder')"
-          :disabled="loading"
-          @keyup.enter="sendMessage()"
-        >
-          <template #append>
-            <el-button
-              type="primary"
-              :icon="Promotion"
-              :loading="loading"
-              @click="sendMessage()"
-            >
-              {{ t('assistant.send') }}
-            </el-button>
-          </template>
-        </el-input>
+        <div class="input-wrapper">
+          <input
+            v-model="inputMessage"
+            type="text"
+            :placeholder="t('assistant.placeholder')"
+            :disabled="loading"
+            @keyup.enter="sendMessage()"
+          />
+          <button
+            class="send-btn"
+            :disabled="loading || !inputMessage.trim()"
+            @click="sendMessage()"
+          >
+            <el-icon v-if="!loading" :size="20"><Promotion /></el-icon>
+            <span v-else class="btn-loading"></span>
+          </button>
+        </div>
       </div>
-    </el-card>
+    </div>
   </div>
 </template>
 
 <style scoped lang="scss">
+// 黑金主题变量
+$gold-primary: #D4AF37;
+$gold-light: #F4D03F;
+$gold-dark: #B8860B;
+$bg-dark: #0D0D0D;
+$bg-card: #1A1A1A;
+$bg-darker: #121212;
+$text-primary: #FFFFFF;
+$text-secondary: rgba(255, 255, 255, 0.85);
+$text-tertiary: rgba(255, 255, 255, 0.65);
+$border-color: rgba(212, 175, 55, 0.2);
+
 .assistant-container {
-  height: calc(100vh - 180px);
+  height: calc(100vh - 140px);
   
   .chat-card {
     height: 100%;
     display: flex;
     flex-direction: column;
-    
-    :deep(.el-card__header) {
-      padding: 16px 20px;
-      border-bottom: 1px solid #f0f0f0;
-    }
-    
-    :deep(.el-card__body) {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      padding: 0;
-      overflow: hidden;
-    }
+    background: $bg-card;
+    border: 1px solid $border-color;
+    border-radius: 16px;
+    overflow: hidden;
   }
   
   .chat-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 16px 24px;
+    background: linear-gradient(90deg, rgba(212, 175, 55, 0.1) 0%, transparent 100%);
+    border-bottom: 1px solid $border-color;
     
     .header-left {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 12px;
       
-      .title {
-        font-size: 16px;
-        font-weight: 600;
+      .header-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, $gold-primary 0%, $gold-dark 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: $bg-dark;
+      }
+      
+      .header-info {
+        display: flex;
+        flex-direction: column;
+        
+        .title {
+          font-size: 16px;
+          font-weight: 600;
+          color: $text-primary;
+        }
+        
+        .subtitle {
+          font-size: 12px;
+          color: $text-tertiary;
+        }
+      }
+    }
+    
+    .clear-btn {
+      color: $text-tertiary;
+      
+      &:hover {
+        color: #ff4d4f;
       }
     }
   }
@@ -261,46 +302,79 @@ onMounted(() => {
   .chat-messages {
     flex: 1;
     overflow-y: auto;
-    padding: 20px;
-    background-color: #f5f7fa;
+    padding: 24px;
+    background: linear-gradient(180deg, $bg-darker 0%, $bg-card 100%);
   }
   
   .welcome-message {
     text-align: center;
     padding: 40px 20px;
     
-    .welcome-icon {
-      font-size: 48px;
-      margin-bottom: 16px;
+    .welcome-avatar {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 20px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(212, 175, 55, 0.05) 100%);
+      border: 1px solid $border-color;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
     }
     
     h3 {
-      margin: 0 0 8px;
-      font-size: 20px;
-      color: #1a1a1a;
+      margin: 0 0 12px;
+      font-size: 22px;
+      font-weight: 600;
+      background: linear-gradient(135deg, $gold-primary 0%, $gold-light 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
     
     p {
-      margin: 0 0 24px;
-      color: #666;
+      margin: 0 0 32px;
+      color: $text-tertiary;
+      font-size: 14px;
+      line-height: 1.6;
     }
     
     .suggestions {
       .suggestions-title {
-        font-size: 14px;
-        color: #999;
-        margin-bottom: 12px;
+        font-size: 13px;
+        color: $text-tertiary;
+        margin-bottom: 16px;
       }
       
       .suggestion-list {
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
-        gap: 8px;
+        gap: 10px;
         
         .suggestion-btn {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 10px 16px;
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid $border-color;
+          border-radius: 20px;
+          color: $text-secondary;
+          font-size: 13px;
+          cursor: pointer;
+          transition: all 0.3s;
+          
+          &:hover {
+            background: rgba(212, 175, 55, 0.1);
+            border-color: $gold-primary;
+            color: $gold-primary;
+            transform: translateY(-2px);
+          }
+          
           .suggestion-icon {
-            margin-right: 4px;
+            font-size: 16px;
           }
         }
       }
@@ -310,71 +384,84 @@ onMounted(() => {
   .message {
     display: flex;
     gap: 12px;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
+    animation: fadeIn 0.3s ease;
     
     &.user {
       flex-direction: row-reverse;
       
       .message-content {
-        background-color: #1890ff;
-        color: #fff;
-        border-radius: 12px 12px 0 12px;
+        background: linear-gradient(135deg, $gold-primary 0%, $gold-dark 100%);
+        color: $bg-dark;
+        border-radius: 16px 16px 4px 16px;
         
         .message-time {
-          color: rgba(255, 255, 255, 0.7);
+          color: rgba(0, 0, 0, 0.5);
         }
       }
     }
     
     &.assistant {
       .message-content {
-        background-color: #fff;
-        border-radius: 12px 12px 12px 0;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid $border-color;
+        border-radius: 16px 16px 16px 4px;
       }
     }
     
     .message-avatar {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      background-color: #fff;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid $border-color;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 20px;
       flex-shrink: 0;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
     
     .message-content {
       max-width: 70%;
-      padding: 12px 16px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      padding: 14px 18px;
       
       .message-text {
-        line-height: 1.6;
+        line-height: 1.7;
         word-break: break-word;
+        font-size: 14px;
       }
       
       .message-time {
-        font-size: 12px;
-        color: #999;
-        margin-top: 4px;
+        font-size: 11px;
+        color: $text-tertiary;
+        margin-top: 6px;
         text-align: right;
       }
     }
   }
   
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
   .loading-dots {
     display: flex;
-    gap: 4px;
+    gap: 6px;
     padding: 4px 0;
     
     span {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background-color: #999;
+      background: $gold-primary;
       animation: bounce 1.4s infinite ease-in-out both;
       
       &:nth-child(1) { animation-delay: -0.32s; }
@@ -383,23 +470,80 @@ onMounted(() => {
   }
   
   @keyframes bounce {
-    0%, 80%, 100% { transform: scale(0); }
-    40% { transform: scale(1); }
+    0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+    40% { transform: scale(1); opacity: 1; }
   }
   
   .chat-input {
-    padding: 16px 20px;
-    border-top: 1px solid #f0f0f0;
-    background-color: #fff;
+    padding: 20px 24px;
+    background: $bg-card;
+    border-top: 1px solid $border-color;
     
-    :deep(.el-input-group__append) {
-      padding: 0;
+    .input-wrapper {
+      display: flex;
+      gap: 12px;
+      padding: 6px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid $border-color;
+      border-radius: 12px;
+      transition: all 0.3s;
       
-      .el-button {
-        border-radius: 0 4px 4px 0;
-        margin: -1px;
+      &:focus-within {
+        border-color: $gold-primary;
+        box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+      }
+      
+      input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        outline: none;
+        padding: 12px 16px;
+        font-size: 14px;
+        color: $text-primary;
+        
+        &::placeholder {
+          color: $text-tertiary;
+        }
+      }
+      
+      .send-btn {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        border: none;
+        background: linear-gradient(135deg, $gold-primary 0%, $gold-dark 100%);
+        color: $bg-dark;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s;
+        
+        &:hover:not(:disabled) {
+          box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+          transform: scale(1.05);
+        }
+        
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        
+        .btn-loading {
+          width: 20px;
+          height: 20px;
+          border: 2px solid transparent;
+          border-top-color: $bg-dark;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
       }
     }
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
   }
 }
 </style>

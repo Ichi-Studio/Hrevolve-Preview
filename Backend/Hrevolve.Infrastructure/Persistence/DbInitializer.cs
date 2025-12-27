@@ -45,8 +45,14 @@ public class DbInitializer
         try
         {
             await SeedTenantsAsync();
+            await _context.SaveChangesAsync(); // 先保存租户
+            
             await SeedRolesAsync();
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(); // 保存角色
+            
+            await SeedUsersAsync();
+            await _context.SaveChangesAsync(); // 保存用户
+            
             _logger.LogInformation("种子数据创建完成");
         }
         catch (Exception ex)
@@ -114,5 +120,21 @@ public class DbInitializer
             role.AddPermission(permission);
         }
         return role;
+    }
+    
+    private async Task SeedUsersAsync()
+    {
+        if (await _context.Users.AnyAsync()) return;
+        
+        var defaultTenant = await _context.Tenants.FirstAsync();
+        var adminRole = await _context.Roles.FirstAsync(r => r.Code == "system_admin");
+        
+        // 创建管理员用户
+        var admin = User.Create(defaultTenant.Id, "admin", "admin@hrevolve.com");
+        admin.SetPassword("admin123"); // 演示用明文密码，生产环境应使用BCrypt哈希
+        admin.AddRole(adminRole.Id);
+        
+        await _context.Users.AddAsync(admin);
+        _logger.LogInformation("管理员用户已创建: admin / admin123");
     }
 }
