@@ -6,14 +6,8 @@ namespace Hrevolve.Web.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class EmployeesController : ControllerBase
+public class EmployeesController(IMediator mediator) : ControllerBase
 {
-    private readonly IMediator _mediator;
-    
-    public EmployeesController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
     
     /// <summary>
     /// 获取员工详情
@@ -22,7 +16,7 @@ public class EmployeesController : ControllerBase
     [RequirePermission(Permissions.EmployeeRead)]
     public async Task<IActionResult> GetEmployee(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new GetEmployeeQuery(id), cancellationToken);
+        var result = await mediator.Send(new GetEmployeeQuery(id), cancellationToken);
         
         if (result.IsFailure)
         {
@@ -42,7 +36,7 @@ public class EmployeesController : ControllerBase
         [FromQuery] DateOnly date, 
         CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(new GetEmployeeAtDateQuery(id, date), cancellationToken);
+        var result = await mediator.Send(new GetEmployeeAtDateQuery(id, date), cancellationToken);
         
         if (result.IsFailure)
         {
@@ -61,7 +55,7 @@ public class EmployeesController : ControllerBase
         [FromBody] CreateEmployeeCommand command, 
         CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(command, cancellationToken);
+        var result = await mediator.Send(command, cancellationToken);
         
         if (result.IsFailure)
         {

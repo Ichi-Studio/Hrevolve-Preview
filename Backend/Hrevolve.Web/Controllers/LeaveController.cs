@@ -6,14 +6,8 @@ namespace Hrevolve.Web.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class LeaveController : ControllerBase
+public class LeaveController(IMediator mediator) : ControllerBase
 {
-    private readonly IMediator _mediator;
-    
-    public LeaveController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
     
     /// <summary>
     /// 提交请假申请
@@ -24,7 +18,7 @@ public class LeaveController : ControllerBase
         [FromBody] CreateLeaveRequestCommand command,
         CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(command, cancellationToken);
+        var result = await mediator.Send(command, cancellationToken);
         
         if (result.IsFailure)
         {

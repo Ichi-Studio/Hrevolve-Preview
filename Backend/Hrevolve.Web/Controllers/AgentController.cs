@@ -6,21 +6,11 @@ namespace Hrevolve.Web.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class AgentController : ControllerBase
+public class AgentController(
+    IHrAgentService agentService,
+    ICurrentUserAccessor currentUserAccessor,
+    ILogger<AgentController> logger) : ControllerBase
 {
-    private readonly IHrAgentService _agentService;
-    private readonly ICurrentUserAccessor _currentUserAccessor;
-    private readonly ILogger<AgentController> _logger;
-    
-    public AgentController(
-        IHrAgentService agentService,
-        ICurrentUserAccessor currentUserAccessor,
-        ILogger<AgentController> logger)
-    {
-        _agentService = agentService;
-        _currentUserAccessor = currentUserAccessor;
-        _logger = logger;
-    }
     
     /// <summary>
     /// 发送消息给HR助手
@@ -30,7 +20,7 @@ public class AgentController : ControllerBase
         [FromBody] ChatRequest request,
         CancellationToken cancellationToken)
     {
-        var currentUser = _currentUserAccessor.CurrentUser;
+        var currentUser = currentUserAccessor.CurrentUser;
         
         if (currentUser?.EmployeeId == null)
         {
@@ -39,9 +29,9 @@ public class AgentController : ControllerBase
         
         var employeeId = currentUser.EmployeeId.Value;
         
-        _logger.LogInformation("员工 {EmployeeId} 发送消息给HR助手", employeeId);
+        logger.LogInformation("员工 {EmployeeId} 发送消息给HR助手", employeeId);
         
-        var response = await _agentService.ChatAsync(employeeId, request.Message, cancellationToken);
+        var response = await agentService.ChatAsync(employeeId, request.Message, cancellationToken);
         
         return Ok(new ChatResponse
         {
@@ -56,14 +46,14 @@ public class AgentController : ControllerBase
     [HttpGet("history")]
     public async Task<IActionResult> GetHistory([FromQuery] int limit = 20)
     {
-        var currentUser = _currentUserAccessor.CurrentUser;
+        var currentUser = currentUserAccessor.CurrentUser;
         
         if (currentUser?.EmployeeId == null)
         {
             return BadRequest(new { code = "NO_EMPLOYEE", message = "当前用户未关联员工信息" });
         }
         
-        var history = await _agentService.GetChatHistoryAsync(currentUser.EmployeeId.Value, limit);
+        var history = await agentService.GetChatHistoryAsync(currentUser.EmployeeId.Value, limit);
         
         return Ok(new { messages = history });
     }
@@ -74,14 +64,14 @@ public class AgentController : ControllerBase
     [HttpDelete("history")]
     public async Task<IActionResult> ClearHistory()
     {
-        var currentUser = _currentUserAccessor.CurrentUser;
+        var currentUser = currentUserAccessor.CurrentUser;
         
         if (currentUser?.EmployeeId == null)
         {
             return BadRequest(new { code = "NO_EMPLOYEE", message = "当前用户未关联员工信息" });
         }
         
-        await _agentService.ClearChatHistoryAsync(currentUser.EmployeeId.Value);
+        await agentService.ClearChatHistoryAsync(currentUser.EmployeeId.Value);
         
         return Ok(new { message = "对话历史已清除" });
     }

@@ -6,14 +6,8 @@ namespace Hrevolve.Web.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class OrganizationsController : ControllerBase
+public class OrganizationsController(IMediator mediator) : ControllerBase
 {
-    private readonly IMediator _mediator;
-    
-    public OrganizationsController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
     
     /// <summary>
     /// 获取组织架构树

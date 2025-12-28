@@ -43,24 +43,16 @@ public class LoginCommandValidator : AbstractValidator<LoginCommand>
 /// <summary>
 /// 登录命令处理器
 /// </summary>
-public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<LoginResponse>>
+public class LoginCommandHandler(
+    IUserRepository userRepository,
+    IConfiguration configuration) : IRequestHandler<LoginCommand, Result<LoginResponse>>
 {
-    private readonly IUserRepository _userRepository;
-    private readonly IConfiguration _configuration;
-    
-    public LoginCommandHandler(
-        IUserRepository userRepository,
-        IConfiguration configuration)
-    {
-        _userRepository = userRepository;
-        _configuration = configuration;
-    }
     
     public async Task<Result<LoginResponse>> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
         // 查找用户（支持用户名或邮箱登录）
-        var user = await _userRepository.GetByUsernameAsync(request.Username, cancellationToken)
-                   ?? await _userRepository.GetByEmailAsync(request.Username, cancellationToken);
+        var user = await userRepository.GetByUsernameAsync(request.Username, cancellationToken)
+                   ?? await userRepository.GetByEmailAsync(request.Username, cancellationToken);
         
         if (user == null)
         {
@@ -109,7 +101,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<LoginRes
         user.RecordLogin(request.IpAddress ?? "unknown");
         
         // 获取用户权限
-        var permissions = await _userRepository.GetPermissionsAsync(user.Id, cancellationToken);
+        var permissions = await userRepository.GetPermissionsAsync(user.Id, cancellationToken);
         
         // 生成JWT Token
         var token = GenerateJwtToken(user, permissions);
@@ -135,7 +127,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<LoginRes
     
     private string GenerateJwtToken(Domain.Identity.User user, IReadOnlyList<string> permissions)
     {
-        var jwtSettings = _configuration.GetSection("Jwt");
+        var jwtSettings = configuration.GetSection("Jwt");
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         

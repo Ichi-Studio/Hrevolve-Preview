@@ -67,28 +67,18 @@ public class CreateEmployeeCommandValidator : AbstractValidator<CreateEmployeeCo
 /// <summary>
 /// 创建员工命令处理器
 /// </summary>
-public class CreateEmployeeCommandHandler : IRequestHandler<CreateEmployeeCommand, Result<Guid>>
+public class CreateEmployeeCommandHandler(
+    IEmployeeRepository employeeRepository,
+    IUnitOfWork unitOfWork,
+    ITenantContextAccessor tenantContextAccessor) : IRequestHandler<CreateEmployeeCommand, Result<Guid>>
 {
-    private readonly IEmployeeRepository _employeeRepository;
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly ITenantContextAccessor _tenantContextAccessor;
-    
-    public CreateEmployeeCommandHandler(
-        IEmployeeRepository employeeRepository,
-        IUnitOfWork unitOfWork,
-        ITenantContextAccessor tenantContextAccessor)
-    {
-        _employeeRepository = employeeRepository;
-        _unitOfWork = unitOfWork;
-        _tenantContextAccessor = tenantContextAccessor;
-    }
     
     public async Task<Result<Guid>> Handle(CreateEmployeeCommand request, CancellationToken cancellationToken)
     {
-        var tenantId = _tenantContextAccessor.TenantContext?.TenantId ?? Guid.Empty;
+        var tenantId = tenantContextAccessor.TenantContext?.TenantId ?? Guid.Empty;
         
         // 检查员工编号是否已存在
-        var existing = await _employeeRepository.GetByEmployeeNumberAsync(request.EmployeeNumber, cancellationToken);
+        var existing = await employeeRepository.GetByEmployeeNumberAsync(request.EmployeeNumber, cancellationToken);
         if (existing != null)
         {
             return Result.Failure<Guid>("员工编号已存在", "DUPLICATE_EMPLOYEE_NUMBER");
@@ -112,7 +102,7 @@ public class CreateEmployeeCommandHandler : IRequestHandler<CreateEmployeeComman
             employee.SetDirectManager(request.DirectManagerId.Value);
         }
         
-        await _employeeRepository.AddAsync(employee, cancellationToken);
+        await employeeRepository.AddAsync(employee, cancellationToken);
         
         // 创建初始职位历史记录
         var jobHistory = JobHistory.Create(
@@ -128,7 +118,7 @@ public class CreateEmployeeCommandHandler : IRequestHandler<CreateEmployeeComman
         // 这里需要通过DbContext添加JobHistory
         // 实际项目中应该有专门的JobHistoryRepository
         
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         
         return Result.Success(employee.Id);
     }

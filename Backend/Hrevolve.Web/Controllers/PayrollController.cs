@@ -6,14 +6,8 @@ namespace Hrevolve.Web.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class PayrollController : ControllerBase
+public class PayrollController(IMediator mediator) : ControllerBase
 {
-    private readonly IMediator _mediator;
-    
-    public PayrollController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
     
     /// <summary>
     /// 获取薪资周期列表

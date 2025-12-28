@@ -3,16 +3,8 @@ namespace Hrevolve.Infrastructure.Persistence;
 /// <summary>
 /// 数据库初始化器 - 创建初始数据
 /// </summary>
-public class DbInitializer
+public class DbInitializer(HrevolveDbContext context, ILogger<DbInitializer> logger)
 {
-    private readonly HrevolveDbContext _context;
-    private readonly ILogger<DbInitializer> _logger;
-    
-    public DbInitializer(HrevolveDbContext context, ILogger<DbInitializer> logger)
-    {
-        _context = context;
-        _logger = logger;
-    }
     
     /// <summary>
     /// 初始化数据库
@@ -22,12 +14,12 @@ public class DbInitializer
         try
         {
             // 应用迁移
-            await _context.Database.MigrateAsync();
-            _logger.LogInformation("数据库迁移完成");
+            await context.Database.MigrateAsync();
+            logger.LogInformation("数据库迁移完成");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "数据库迁移失败");
+            logger.LogError(ex, "数据库迁移失败");
             throw;
         }
     }
@@ -40,39 +32,39 @@ public class DbInitializer
         try
         {
             await SeedTenantsAsync();
-            await _context.SaveChangesAsync(); // 先保存租户
+            await context.SaveChangesAsync(); // 先保存租户
             
             await SeedRolesAsync();
-            await _context.SaveChangesAsync(); // 保存角色
+            await context.SaveChangesAsync(); // 保存角色
             
             await SeedUsersAsync();
-            await _context.SaveChangesAsync(); // 保存用户
+            await context.SaveChangesAsync(); // 保存用户
             
-            _logger.LogInformation("种子数据创建完成");
+            logger.LogInformation("种子数据创建完成");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "种子数据创建失败");
+            logger.LogError(ex, "种子数据创建失败");
             throw;
         }
     }
     
     private async Task SeedTenantsAsync()
     {
-        if (await _context.Tenants.AnyAsync()) return;
+        if (await context.Tenants.AnyAsync()) return;
         
         // 创建默认租户
         var defaultTenant = Tenant.Create("默认租户", "default", TenantPlan.Professional);
-        await _context.Tenants.AddAsync(defaultTenant);
+        await context.Tenants.AddAsync(defaultTenant);
         
-        _logger.LogInformation("默认租户已创建: {TenantCode}", defaultTenant.Code);
+        logger.LogInformation("默认租户已创建: {TenantCode}", defaultTenant.Code);
     }
     
     private async Task SeedRolesAsync()
     {
-        if (await _context.Roles.AnyAsync()) return;
+        if (await context.Roles.AnyAsync()) return;
         
-        var defaultTenant = await _context.Tenants.FirstAsync();
+        var defaultTenant = await context.Tenants.FirstAsync();
         
         // 创建系统角色
         var roles = new[]
@@ -103,8 +95,8 @@ public class DbInitializer
                 Permissions.ExpenseRead, Permissions.ExpenseWrite)
         };
         
-        await _context.Roles.AddRangeAsync(roles);
-        _logger.LogInformation("系统角色已创建: {Count} 个", roles.Length);
+        await context.Roles.AddRangeAsync(roles);
+        logger.LogInformation("系统角色已创建: {Count} 个", roles.Length);
     }
     
     private static Role CreateRole(Guid tenantId, string name, string code, bool isSystem, params string[] permissions)
@@ -119,17 +111,17 @@ public class DbInitializer
     
     private async Task SeedUsersAsync()
     {
-        if (await _context.Users.AnyAsync()) return;
+        if (await context.Users.AnyAsync()) return;
         
-        var defaultTenant = await _context.Tenants.FirstAsync();
-        var adminRole = await _context.Roles.FirstAsync(r => r.Code == "system_admin");
+        var defaultTenant = await context.Tenants.FirstAsync();
+        var adminRole = await context.Roles.FirstAsync(r => r.Code == "system_admin");
         
         // 创建管理员用户
         var admin = User.Create(defaultTenant.Id, "admin", "admin@hrevolve.com");
         admin.SetPassword("admin123"); // 演示用明文密码，生产环境应使用BCrypt哈希
         admin.AddRole(adminRole.Id);
         
-        await _context.Users.AddAsync(admin);
-        _logger.LogInformation("管理员用户已创建: admin / admin123");
+        await context.Users.AddAsync(admin);
+        logger.LogInformation("管理员用户已创建: admin / admin123");
     }
 }

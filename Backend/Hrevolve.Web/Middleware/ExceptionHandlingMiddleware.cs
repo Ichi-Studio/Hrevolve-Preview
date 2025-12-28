@@ -3,22 +3,14 @@ namespace Hrevolve.Web.Middleware;
 /// <summary>
 /// 全局异常处理中间件
 /// </summary>
-public class ExceptionHandlingMiddleware
+public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
 {
-    private readonly RequestDelegate _next;
-    private readonly ILogger<ExceptionHandlingMiddleware> _logger;
-    
-    public ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
-    {
-        _next = next;
-        _logger = logger;
-    }
     
     public async Task InvokeAsync(HttpContext context)
     {
         try
         {
-            await _next(context);
+            await next(context);
         }
         catch (Exception ex)
         {
@@ -76,7 +68,7 @@ public class ExceptionHandlingMiddleware
                 break;
                 
             default:
-                _logger.LogError(exception, "未处理的异常: {Message}", exception.Message);
+                logger.LogError(exception, "未处理的异常: {Message}", exception.Message);
                 response.StatusCode = (int)HttpStatusCode.InternalServerError;
                 errorResponse.Code = "INTERNAL_ERROR";
                 errorResponse.Message = "服务器内部错误，请稍后重试";

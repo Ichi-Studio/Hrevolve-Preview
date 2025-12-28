@@ -40,29 +40,17 @@ public class CreateLeaveRequestCommandValidator : AbstractValidator<CreateLeaveR
 /// <summary>
 /// 创建请假申请命令处理器
 /// </summary>
-public class CreateLeaveRequestCommandHandler : IRequestHandler<CreateLeaveRequestCommand, Result<Guid>>
+public class CreateLeaveRequestCommandHandler(
+    Infrastructure.Persistence.HrevolveDbContext context,
+    ICurrentUserAccessor currentUserAccessor,
+    ITenantContextAccessor tenantContextAccessor,
+    IUnitOfWork unitOfWork) : IRequestHandler<CreateLeaveRequestCommand, Result<Guid>>
 {
-    private readonly Infrastructure.Persistence.HrevolveDbContext _context;
-    private readonly ICurrentUserAccessor _currentUserAccessor;
-    private readonly ITenantContextAccessor _tenantContextAccessor;
-    private readonly IUnitOfWork _unitOfWork;
-    
-    public CreateLeaveRequestCommandHandler(
-        Infrastructure.Persistence.HrevolveDbContext context,
-        ICurrentUserAccessor currentUserAccessor,
-        ITenantContextAccessor tenantContextAccessor,
-        IUnitOfWork unitOfWork)
-    {
-        _context = context;
-        _currentUserAccessor = currentUserAccessor;
-        _tenantContextAccessor = tenantContextAccessor;
-        _unitOfWork = unitOfWork;
-    }
     
     public async Task<Result<Guid>> Handle(CreateLeaveRequestCommand request, CancellationToken cancellationToken)
     {
-        var currentUser = _currentUserAccessor.CurrentUser;
-        var tenantId = _tenantContextAccessor.TenantContext?.TenantId ?? Guid.Empty;
+        var currentUser = currentUserAccessor.CurrentUser;
+        var tenantId = tenantContextAccessor.TenantContext?.TenantId ?? Guid.Empty;
         
         if (currentUser?.EmployeeId == null)
         {
@@ -72,7 +60,7 @@ public class CreateLeaveRequestCommandHandler : IRequestHandler<CreateLeaveReque
         var employeeId = currentUser.EmployeeId.Value;
         
         // 验证假期类型
-        var leaveType = await _context.LeaveTypes
+        var leaveType = await context.LeaveTypes
             .FirstOrDefaultAsync(lt => lt.Id == request.LeaveTypeId && lt.IsActive, cancellationToken);
         
         if (leaveType == null)
@@ -82,7 +70,7 @@ public class CreateLeaveRequestCommandHandler : IRequestHandler<CreateLeaveReque
         
         // 检查假期余额
         var year = request.StartDate.Year;
-        var balance = await _context.LeaveBalances
+        var balance = await context.LeaveBalances
             .FirstOrDefaultAsync(lb => 
                 lb.EmployeeId == employeeId && 
                 lb.LeaveTypeId == request.LeaveTypeId && 
@@ -98,7 +86,7 @@ public class CreateLeaveRequestCommandHandler : IRequestHandler<CreateLeaveReque
         }
         
         // 检查日期冲突
-        var hasConflict = await _context.LeaveRequests
+        var hasConflict = await context.LeaveRequests
             .AnyAsync(lr => 
                 lr.EmployeeId == employeeId &&
                 lr.Status != LeaveRequestStatus.Cancelled &&
@@ -123,7 +111,7 @@ public class CreateLeaveRequestCommandHandler : IRequestHandler<CreateLeaveReque
             request.EndDayPart,
             request.Reason);
         
-        await _context.LeaveRequests.AddAsync(leaveRequest, cancellationToken);
+        await context.LeaveRequests.AddAsync(leaveRequest, cancellationToken);
         
         // 更新待审批余额
         if (balance != null)
@@ -131,7 +119,7 @@ public class CreateLeaveRequestCommandHandler : IRequestHandler<CreateLeaveReque
             balance.AddPending(totalDays);
         }
         
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         
         return Result.Success(leaveRequest.Id);
     }

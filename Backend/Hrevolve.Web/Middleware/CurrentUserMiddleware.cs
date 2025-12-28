@@ -3,14 +3,8 @@ namespace Hrevolve.Web.Middleware;
 /// <summary>
 /// 当前用户中间件 - 从JWT解析并设置当前用户上下文
 /// </summary>
-public class CurrentUserMiddleware
+public class CurrentUserMiddleware(RequestDelegate next)
 {
-    private readonly RequestDelegate _next;
-    
-    public CurrentUserMiddleware(RequestDelegate next)
-    {
-        _next = next;
-    }
     
     public async Task InvokeAsync(HttpContext context, ICurrentUserAccessor currentUserAccessor)
     {
@@ -22,7 +16,7 @@ public class CurrentUserMiddleware
         
         try
         {
-            await _next(context);
+            await next(context);
         }
         finally
         {

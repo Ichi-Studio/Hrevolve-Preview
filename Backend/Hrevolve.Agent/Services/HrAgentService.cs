@@ -25,29 +25,18 @@ public interface IHrAgentService
 /// <summary>
 /// HR Agent服务实现
 /// </summary>
-public class HrAgentService : IHrAgentService
+public class HrAgentService(
+    IChatClient chatClient,
+    IHrToolProvider toolProvider,
+    ILogger<HrAgentService> logger) : IHrAgentService
 {
-    private readonly IChatClient _chatClient;
-    private readonly ILogger<HrAgentService> _logger;
-    private readonly IHrToolProvider _toolProvider;
-    
     // 对话历史存储（生产环境应使用Redis或数据库）
     private static readonly Dictionary<Guid, List<ChatMessage>> _chatHistories = new();
     private static readonly object _lock = new();
     
-    public HrAgentService(
-        IChatClient chatClient,
-        IHrToolProvider toolProvider,
-        ILogger<HrAgentService> logger)
-    {
-        _chatClient = chatClient;
-        _toolProvider = toolProvider;
-        _logger = logger;
-    }
-    
     public async Task<string> ChatAsync(Guid employeeId, string message, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("HR Agent处理员工 {EmployeeId} 的消息", employeeId);
+        logger.LogInformation("处理员工 {EmployeeId} 的消息", employeeId);
         
         // 获取或创建对话历史
         var chatHistory = GetOrCreateChatHistory(employeeId);
@@ -60,11 +49,11 @@ public class HrAgentService : IHrAgentService
             // 构建聊天选项，包含工具
             var options = new ChatOptions
             {
-                Tools = _toolProvider.GetTools()
+                Tools = toolProvider.GetTools()
             };
             
             // 调用AI模型
-            var response = await _chatClient.GetResponseAsync(chatHistory.AsEnumerable(), options, cancellationToken);
+            var response = await chatClient.GetResponseAsync(chatHistory.AsEnumerable(), options, cancellationToken);
             
             var assistantMessage = response.Text ?? "抱歉，我无法处理您的请求。";
             
@@ -78,7 +67,7 @@ public class HrAgentService : IHrAgentService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "HR Agent处理消息失败");
+            logger.LogError(ex, "HR Agent处理消息失败");
             return "抱歉，系统暂时无法处理您的请求，请稍后重试。";
         }
     }

@@ -6,14 +6,8 @@ namespace Hrevolve.Web.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class AttendanceController : ControllerBase
+public class AttendanceController(IMediator mediator) : ControllerBase
 {
-    private readonly IMediator _mediator;
-    
-    public AttendanceController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
     
     /// <summary>
     /// 签到

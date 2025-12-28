@@ -14,14 +14,8 @@ public interface IHrToolProvider
 /// <summary>
 /// HR工具提供者实现 - 提供AI Agent可调用的工具函数
 /// </summary>
-public class HrToolProvider : IHrToolProvider
+public class HrToolProvider(IServiceProvider serviceProvider) : IHrToolProvider
 {
-    private readonly IServiceProvider _serviceProvider;
-    
-    public HrToolProvider(IServiceProvider serviceProvider)
-    {
-        _serviceProvider = serviceProvider;
-    }
     
     public IList<AITool> GetTools()
     {

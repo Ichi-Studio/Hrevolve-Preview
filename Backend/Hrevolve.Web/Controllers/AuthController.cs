@@ -5,14 +5,8 @@ namespace Hrevolve.Web.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController : ControllerBase
+public class AuthController(IMediator mediator) : ControllerBase
 {
-    private readonly IMediator _mediator;
-    
-    public AuthController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
     
     /// <summary>
     /// 用户名密码登录
@@ -27,7 +21,7 @@ public class AuthController : ControllerBase
             IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString()
         };
         
-        var result = await _mediator.Send(enrichedCommand, cancellationToken);
+        var result = await mediator.Send(enrichedCommand, cancellationToken);
         
         if (result.IsFailure)
         {

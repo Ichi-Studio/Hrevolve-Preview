@@ -3,11 +3,8 @@ namespace Hrevolve.Web.Middleware;
 /// <summary>
 /// 多租户中间件 - 解析并设置租户上下文
 /// </summary>
-public class TenantMiddleware
+public class TenantMiddleware(RequestDelegate next, ILogger<TenantMiddleware> logger)
 {
-    private readonly RequestDelegate _next;
-    private readonly ILogger<TenantMiddleware> _logger;
-    
     // 不需要租户的路径
     private static readonly string[] ExcludedPaths = 
     [
@@ -21,12 +18,6 @@ public class TenantMiddleware
         "/api/localization"
     ];
     
-    public TenantMiddleware(RequestDelegate next, ILogger<TenantMiddleware> logger)
-    {
-        _next = next;
-        _logger = logger;
-    }
-    
     public async Task InvokeAsync(
         HttpContext context,
         ITenantContextAccessor tenantContextAccessor,
@@ -36,13 +27,13 @@ public class TenantMiddleware
         var path = context.Request.Path.Value?.ToLowerInvariant() ?? "";
         if (ExcludedPaths.Any(p => path.StartsWith(p)))
         {
-            await _next(context);
+            await next(context);
             return;
         }
         
         // 优先从JWT中获取租户ID（已认证用户）
         var tenantIdClaim = context.User.FindFirst("tenant_id")?.Value;
-        _logger.LogDebug("JWT tenant_id claim: {TenantId}", tenantIdClaim);
+        logger.LogDebug("JWT tenant_id claim: {TenantId}", tenantIdClaim);
         
         if (!string.IsNullOrEmpty(tenantIdClaim) && Guid.TryParse(tenantIdClaim, out var tenantId))
         {
@@ -50,11 +41,11 @@ public class TenantMiddleware
             if (tenantInfo != null && tenantInfo.IsActive)
             {
                 tenantContextAccessor.TenantContext = new TenantContext(tenantInfo.Id, tenantInfo.Code);
-                _logger.LogDebug("租户上下文已从JWT设置: {TenantId} ({TenantCode})", tenantInfo.Id, tenantInfo.Code);
+                logger.LogDebug("租户上下文已从JWT设置: {TenantId} ({TenantCode})", tenantInfo.Id, tenantInfo.Code);
                 
                 try
                 {
-                    await _next(context);
+                    await next(context);
                 }
                 finally
                 {
@@ -66,7 +57,7 @@ public class TenantMiddleware
         
         // 尝试从请求中解析租户
         var tenantIdentifier = ResolveTenantIdentifier(context);
-        _logger.LogDebug("从请求解析的租户标识: {Identifier}", tenantIdentifier);
+        logger.LogDebug("从请求解析的租户标识: {Identifier}", tenantIdentifier);
         
         if (string.IsNullOrEmpty(tenantIdentifier))
         {
@@ -89,11 +80,11 @@ public class TenantMiddleware
         // 设置租户上下文
         tenantContextAccessor.TenantContext = new TenantContext(tenant.Id, tenant.Code);
         
-        _logger.LogDebug("租户上下文已设置: {TenantId} ({TenantCode})", tenant.Id, tenant.Code);
+        logger.LogDebug("租户上下文已设置: {TenantId} ({TenantCode})", tenant.Id, tenant.Code);
         
         try
         {
-            await _next(context);
+            await next(context);
         }
         finally
         {

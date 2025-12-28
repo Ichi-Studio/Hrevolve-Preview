@@ -43,27 +43,21 @@ public record GetEmployeeQuery(Guid EmployeeId) : IRequest<Result<EmployeeDto>>;
 /// <summary>
 /// 获取员工详情查询处理器
 /// </summary>
-public class GetEmployeeQueryHandler : IRequestHandler<GetEmployeeQuery, Result<EmployeeDto>>
+public class GetEmployeeQueryHandler(IEmployeeRepository employeeRepository) : IRequestHandler<GetEmployeeQuery, Result<EmployeeDto>>
 {
-    private readonly IEmployeeRepository _employeeRepository;
-    
-    public GetEmployeeQueryHandler(IEmployeeRepository employeeRepository)
-    {
-        _employeeRepository = employeeRepository;
-    }
     
     public async Task<Result<EmployeeDto>> Handle(GetEmployeeQuery request, CancellationToken cancellationToken)
     {
-        var employee = await _employeeRepository.GetByIdAsync(request.EmployeeId, cancellationToken);
-        
+        var employee = await employeeRepository.GetByIdAsync(request.EmployeeId, cancellationToken);
+            
         if (employee == null)
         {
             throw new EntityNotFoundException(nameof(Employee), request.EmployeeId);
         }
-        
+            
         // 获取当前职位信息
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var currentJob = await _employeeRepository.GetJobHistoryAtDateAsync(request.EmployeeId, today, cancellationToken);
+        var currentJob = await employeeRepository.GetJobHistoryAtDateAsync(request.EmployeeId, today, cancellationToken);
         
         var dto = new EmployeeDto
         {
@@ -104,18 +98,12 @@ public record GetEmployeeAtDateQuery(Guid EmployeeId, DateOnly Date) : IRequest<
 /// <summary>
 /// 获取员工历史时点状态查询处理器
 /// </summary>
-public class GetEmployeeAtDateQueryHandler : IRequestHandler<GetEmployeeAtDateQuery, Result<EmployeeDto>>
+public class GetEmployeeAtDateQueryHandler(IEmployeeRepository employeeRepository) : IRequestHandler<GetEmployeeAtDateQuery, Result<EmployeeDto>>
 {
-    private readonly IEmployeeRepository _employeeRepository;
-    
-    public GetEmployeeAtDateQueryHandler(IEmployeeRepository employeeRepository)
-    {
-        _employeeRepository = employeeRepository;
-    }
     
     public async Task<Result<EmployeeDto>> Handle(GetEmployeeAtDateQuery request, CancellationToken cancellationToken)
     {
-        var employee = await _employeeRepository.GetByIdAsync(request.EmployeeId, cancellationToken);
+        var employee = await employeeRepository.GetByIdAsync(request.EmployeeId, cancellationToken);
         
         if (employee == null)
         {
@@ -123,7 +111,7 @@ public class GetEmployeeAtDateQueryHandler : IRequestHandler<GetEmployeeAtDateQu
         }
         
         // 获取指定日期的职位信息（SCD Type 2查询）
-        var jobAtDate = await _employeeRepository.GetJobHistoryAtDateAsync(request.EmployeeId, request.Date, cancellationToken);
+        var jobAtDate = await employeeRepository.GetJobHistoryAtDateAsync(request.EmployeeId, request.Date, cancellationToken);
         
         var dto = new EmployeeDto
         {
