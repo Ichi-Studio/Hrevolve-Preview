@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, markRaw } from 'vue';
+import { computed, ref, onMounted, markRaw, shallowRef } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { ElMessage } from 'element-plus';
 import { useAppStore, useAuthStore } from '@/stores';
+import type { Language } from '@/stores/app';
 import { supportedLocales, loadLocaleMessages } from '@/i18n';
 import { localizationApi, type LocaleInfo } from '@/api';
 import {
@@ -47,166 +48,163 @@ onMounted(async () => {
   }
 });
 
-// 菜单配置 - 使用 markRaw 包裹图标组件避免响应式转换
-const menuItems = computed(() => [
+// 菜单配置 - 使用 shallowRef 避免深度响应式，提升性能
+// 图标使用 markRaw 包裹避免响应式转换
+const menuItems = shallowRef([
   {
     index: '/',
-    title: t('menu.dashboard'),
+    title: 'menu.dashboard',
     icon: markRaw(HomeFilled),
   },
   {
     index: '/self-service',
-    title: t('menu.selfService'),
+    title: 'menu.selfService',
     icon: markRaw(User),
     children: [
-      { index: '/self-service/profile', title: t('menu.profile') },
-      { index: '/self-service/attendance', title: t('menu.myAttendance') },
-      { index: '/self-service/leave', title: t('menu.myLeave') },
-      { index: '/self-service/payroll', title: t('menu.myPayroll') },
+      { index: '/self-service/profile', title: 'menu.profile' },
+      { index: '/self-service/attendance', title: 'menu.myAttendance' },
+      { index: '/self-service/leave', title: 'menu.myLeave' },
+      { index: '/self-service/payroll', title: 'menu.myPayroll' },
     ],
   },
   {
     index: '/assistant',
-    title: t('menu.assistant'),
+    title: 'menu.assistant',
     icon: markRaw(ChatDotRound),
   },
   {
     index: '/organization',
-    title: t('menu.organization'),
+    title: 'menu.organization',
     icon: markRaw(OfficeBuilding),
     permission: 'organization:read',
     children: [
-      { index: '/organization/structure', title: t('menu.orgStructure') },
-      { index: '/organization/positions', title: t('menu.positions') },
+      { index: '/organization/structure', title: 'menu.orgStructure' },
+      { index: '/organization/positions', title: 'menu.positions' },
     ],
   },
   {
     index: '/employees',
-    title: t('menu.employees'),
+    title: 'menu.employees',
     icon: markRaw(UserFilled),
     permission: 'employee:read',
   },
   {
     index: '/attendance',
-    title: t('menu.attendance'),
+    title: 'menu.attendance',
     icon: markRaw(Clock),
     permission: 'attendance:read',
     children: [
-      { index: '/attendance/records', title: t('menu.attendanceRecords') },
-      { index: '/attendance/shifts', title: t('menu.shifts') },
+      { index: '/attendance/records', title: 'menu.attendanceRecords' },
+      { index: '/attendance/shifts', title: 'menu.shifts' },
     ],
   },
   {
     index: '/leave',
-    title: t('menu.leave'),
+    title: 'menu.leave',
     icon: markRaw(Calendar),
     permission: 'leave:read',
     children: [
-      { index: '/leave/requests', title: t('menu.leaveRequests') },
-      { index: '/leave/approvals', title: t('menu.leaveApprovals') },
-      { index: '/leave/types', title: t('menu.leaveTypes') },
+      { index: '/leave/requests', title: 'menu.leaveRequests' },
+      { index: '/leave/approvals', title: 'menu.leaveApprovals' },
+      { index: '/leave/types', title: 'menu.leaveTypes' },
     ],
   },
   {
     index: '/payroll',
-    title: t('menu.payroll'),
+    title: 'menu.payroll',
     icon: markRaw(Money),
     permission: 'payroll:read',
     children: [
-      { index: '/payroll/records', title: t('menu.payrollRecords') },
-      { index: '/payroll/periods', title: t('menu.payrollPeriods') },
+      { index: '/payroll/records', title: 'menu.payrollRecords' },
+      { index: '/payroll/periods', title: 'menu.payrollPeriods' },
     ],
   },
   {
     index: '/company',
-    title: t('menu.company') || '公司设置',
+    title: 'menu.company',
     icon: markRaw(Setting),
     permission: 'settings:read',
     children: [
-      { index: '/company/tenant', title: t('menu.companyInfo') || '公司信息' },
-      { index: '/company/cost-centers', title: t('menu.costCenters') || '成本中心' },
-      { index: '/company/tags', title: t('menu.tags') || '标签管理' },
-      { index: '/company/clock-devices', title: t('menu.clockDevices') || '打卡设备' },
-      { index: '/company/users', title: t('menu.users') || '用户管理' },
+      { index: '/company/tenant', title: 'menu.companyInfo' },
+      { index: '/company/cost-centers', title: 'menu.costCenters' },
+      { index: '/company/tags', title: 'menu.tags' },
+      { index: '/company/clock-devices', title: 'menu.clockDevices' },
+      { index: '/company/users', title: 'menu.users' },
     ],
   },
   {
     index: '/schedule',
-    title: t('menu.schedule') || '排班管理',
+    title: 'menu.schedule',
     icon: markRaw(Calendar),
     permission: 'attendance:read',
     children: [
-      { index: '/schedule/overview', title: t('menu.scheduleOverview') || '排班概览' },
-      { index: '/schedule/table', title: t('menu.scheduleTable') || '排班表' },
-      { index: '/schedule/templates', title: t('menu.shiftTemplates') || '班次模板' },
-      { index: '/schedule/calendar', title: t('menu.scheduleCalendar') || '排班日历' },
+      { index: '/schedule/overview', title: 'menu.scheduleOverview' },
+      { index: '/schedule/table', title: 'menu.scheduleTable' },
+      { index: '/schedule/templates', title: 'menu.shiftTemplates' },
+      { index: '/schedule/calendar', title: 'menu.scheduleCalendar' },
     ],
   },
   {
     index: '/expense',
-    title: t('menu.expense') || '报销管理',
+    title: 'menu.expense',
     icon: markRaw(Wallet),
     permission: 'expense:read',
     children: [
-      { index: '/expense/requests', title: t('menu.expenseRequests') || '报销申请' },
-      { index: '/expense/types', title: t('menu.expenseTypes') || '报销类型' },
+      { index: '/expense/requests', title: 'menu.expenseRequests' },
+      { index: '/expense/types', title: 'menu.expenseTypes' },
     ],
   },
   {
     index: '/insurance',
-    title: t('menu.insurance') || '保险福利',
+    title: 'menu.insurance',
     icon: markRaw(FirstAidKit),
     permission: 'payroll:read',
     children: [
-      { index: '/insurance/overview', title: t('menu.insuranceOverview') || '概览' },
-      { index: '/insurance/plans', title: t('menu.insurancePlans') || '保险方案' },
-      { index: '/insurance/employees', title: t('menu.employeeInsurance') || '员工参保' },
-      { index: '/insurance/benefits', title: t('menu.benefits') || '福利项目' },
+      { index: '/insurance/overview', title: 'menu.insuranceOverview' },
+      { index: '/insurance/plans', title: 'menu.insurancePlans' },
+      { index: '/insurance/employees', title: 'menu.employeeInsurance' },
+      { index: '/insurance/benefits', title: 'menu.benefits' },
     ],
   },
   {
     index: '/tax',
-    title: t('menu.tax') || '报税管理',
+    title: 'menu.tax',
     icon: markRaw(Document),
     permission: 'payroll:read',
     children: [
-      { index: '/tax/profiles', title: t('menu.taxProfiles') || '税务档案' },
-      { index: '/tax/records', title: t('menu.taxRecords') || '报税记录' },
-      { index: '/tax/settings', title: t('menu.taxSettings') || '税务设置' },
+      { index: '/tax/profiles', title: 'menu.taxProfiles' },
+      { index: '/tax/records', title: 'menu.taxRecords' },
+      { index: '/tax/settings', title: 'menu.taxSettings' },
     ],
   },
   {
     index: '/settings',
-    title: t('menu.settings') || '系统设置',
+    title: 'menu.settings',
     icon: markRaw(Tools),
     permission: 'settings:read',
     children: [
-      { index: '/settings/configs', title: t('menu.systemConfigs') || '系统配置' },
-      { index: '/settings/roles', title: t('menu.roles') || '角色管理' },
-      { index: '/settings/approval-flows', title: t('menu.approvalFlows') || '审批流程' },
-      { index: '/settings/audit-logs', title: t('menu.auditLogs') || '审计日志' },
+      { index: '/settings/configs', title: 'menu.systemConfigs' },
+      { index: '/settings/roles', title: 'menu.roles' },
+      { index: '/settings/approval-flows', title: 'menu.approvalFlows' },
+      { index: '/settings/audit-logs', title: 'menu.auditLogs' },
     ],
   },
 ]);
 
-// 过滤有权限的菜单
+// 过滤有权限的菜单 - 使用缓存避免频繁计算
 // 注意：开发环境暂时显示所有菜单，生产环境需要恢复权限检查
 const filteredMenuItems = computed(() => {
+  // 开发模式下直接返回所有菜单，避免权限检查开销
+  if (import.meta.env.DEV) return menuItems.value;
+  
   return menuItems.value.filter((item) => {
     if (!item.permission) return true;
-    // 开发模式下显示所有菜单
-    if (import.meta.env.DEV) return true;
     return authStore.hasPermission(item.permission);
   });
 });
 
 // 当前激活的菜单
 const activeMenu = computed(() => route.path);
-
-// 当前语言信息
-const currentLocale = computed(() => {
-  return locales.value.find(l => l.code === locale.value) || locales.value[0];
-});
 
 // 切换语言
 const changeLanguage = async (langCode: string) => {
@@ -222,8 +220,8 @@ const changeLanguage = async (langCode: string) => {
     }
     
     // 切换语言
-    locale.value = langCode;
-    appStore.setLanguage(langCode);
+    locale.value = langCode as 'zh-CN' | 'zh-TW' | 'en-US';
+    appStore.setLanguage(langCode as Language);
     
     const langName = locales.value.find(l => l.code === langCode)?.name || langCode;
     ElMessage.success({
@@ -232,8 +230,8 @@ const changeLanguage = async (langCode: string) => {
     });
   } catch {
     // 即使后端加载失败，也切换到本地语言包
-    locale.value = langCode;
-    appStore.setLanguage(langCode);
+    locale.value = langCode as 'zh-CN' | 'zh-TW' | 'en-US';
+    appStore.setLanguage(langCode as Language);
   } finally {
     isChangingLang.value = false;
   }
@@ -261,29 +259,30 @@ const handleLogout = () => {
         :default-active="activeMenu"
         :collapse="appStore.sidebarCollapsed"
         :collapse-transition="false"
+        :unique-opened="true"
         router
         class="sidebar-menu"
       >
         <template v-for="item in filteredMenuItems" :key="item.index">
           <!-- 有子菜单 -->
-          <el-sub-menu v-if="item.children" :index="item.index">
+          <el-sub-menu v-if="item.children" :index="item.index" :popper-class="'sidebar-submenu-popper'">
             <template #title>
               <el-icon><component :is="item.icon" /></el-icon>
-              <span>{{ item.title }}</span>
+              <span>{{ t(item.title) }}</span>
             </template>
             <el-menu-item
               v-for="child in item.children"
               :key="child.index"
               :index="child.index"
             >
-              {{ child.title }}
+              {{ t(child.title) }}
             </el-menu-item>
           </el-sub-menu>
           
           <!-- 无子菜单 -->
           <el-menu-item v-else :index="item.index">
             <el-icon><component :is="item.icon" /></el-icon>
-            <template #title>{{ item.title }}</template>
+            <template #title>{{ t(item.title) }}</template>
           </el-menu-item>
         </template>
       </el-menu>
@@ -393,8 +392,30 @@ $border-color: rgba(212, 175, 55, 0.2);
 .sidebar {
   background: linear-gradient(180deg, #0A0A0A 0%, #151515 50%, #0D0D0D 100%);
   border-right: 1px solid $border-color;
-  transition: width 0.3s;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+  position: relative;
+  
+  // 添加侧边栏阴影效果
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 1px;
+    height: 100%;
+    background: linear-gradient(180deg, 
+      transparent 0%, 
+      rgba(212, 175, 55, 0.3) 50%, 
+      transparent 100%
+    );
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  
+  &:hover::after {
+    opacity: 1;
+  }
   
   .logo {
     height: 64px;
@@ -403,6 +424,7 @@ $border-color: rgba(212, 175, 55, 0.2);
     padding: 0 16px;
     border-bottom: 1px solid $border-color;
     background: linear-gradient(90deg, rgba(212, 175, 55, 0.08) 0%, transparent 100%);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     
     .logo-icon {
       width: 36px;
@@ -413,12 +435,20 @@ $border-color: rgba(212, 175, 55, 0.2);
       background: linear-gradient(135deg, $gold-primary 0%, $gold-light 50%, $gold-dark 100%);
       border-radius: 8px;
       flex-shrink: 0;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 8px rgba(212, 175, 55, 0.2);
+      
+      &:hover {
+        transform: scale(1.05) rotate(5deg);
+        box-shadow: 0 4px 16px rgba(212, 175, 55, 0.4);
+      }
     }
     
     .logo-img {
       width: 24px;
       height: 24px;
       filter: brightness(0) invert(0);
+      transition: transform 0.3s;
     }
     
     .logo-text {
@@ -430,6 +460,8 @@ $border-color: rgba(212, 175, 55, 0.2);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
+      opacity: 1;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
   
@@ -438,21 +470,45 @@ $border-color: rgba(212, 175, 55, 0.2);
     background-color: transparent;
     padding: 8px;
     
+    // 使用 GPU 加速优化动画性能
     :deep(.el-menu-item),
     :deep(.el-sub-menu__title) {
       color: $text-tertiary;
       border-radius: 8px;
       margin: 4px 0;
-      transition: all 0.3s;
+      transition: color 0.25s ease, background-color 0.25s ease;
+      position: relative;
+      overflow: hidden;
+      backface-visibility: hidden; // 防止闪烁
+      
+      // 添加悬停时的光效
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, 
+          transparent 0%, 
+          rgba(212, 175, 55, 0.1) 50%, 
+          transparent 100%
+        );
+        transition: left 0.5s;
+      }
       
       .el-icon {
         color: $text-tertiary;
-        transition: all 0.3s;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
       
       &:hover {
         color: $gold-primary;
         background: linear-gradient(90deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%);
+        
+        &::before {
+          left: 100%;
+        }
         
         .el-icon {
           color: $gold-primary;
@@ -465,6 +521,10 @@ $border-color: rgba(212, 175, 55, 0.2);
       background: linear-gradient(135deg, $gold-primary 0%, $gold-light 50%, $gold-dark 100%);
       font-weight: 600;
       box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+      
+      &::before {
+        display: none;
+      }
       
       .el-icon {
         color: $bg-dark;
@@ -479,13 +539,64 @@ $border-color: rgba(212, 175, 55, 0.2);
       }
     }
     
-    :deep(.el-sub-menu .el-menu) {
-      background: transparent;
-      
-      .el-menu-item {
-        padding-left: 52px !important;
-        font-size: 13px;
+    // 完全自定义子菜单展开动画 - 避免 Element Plus 的"向上弹"问题
+    :deep(.el-sub-menu) {
+      .el-menu {
+        background: transparent;
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        transform: scaleY(0.8);
+        transform-origin: top;
+        transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                    opacity 0.25s ease,
+                    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        
+        .el-menu-item {
+          padding-left: 52px !important;
+          font-size: 13px;
+        }
       }
+      
+      // 展开状态 - 使用足够大的 max-height
+      &.is-opened .el-menu {
+        max-height: 800px;
+        opacity: 1;
+        transform: scaleY(1);
+        transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                    opacity 0.3s ease 0.05s,
+                    transform 0.35s cubic-bezier(0.4, 0, 0.2, 1) 0.05s;
+      }
+    }
+    
+    // 优化子菜单箭头动画
+    :deep(.el-sub-menu__icon-arrow) {
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  }
+}
+
+// 全局子菜单弹出层样式优化
+:deep(.sidebar-submenu-popper) {
+  background: linear-gradient(145deg, rgba(26, 26, 26, 0.98) 0%, rgba(13, 13, 13, 0.98) 100%) !important;
+  border: 1px solid $border-color !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
+  backdrop-filter: blur(10px);
+  
+  .el-menu-item {
+    color: $text-secondary !important;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background: rgba(212, 175, 55, 0.12) !important;
+      color: $gold-primary !important;
+    }
+    
+    &.is-active {
+      background: rgba(212, 175, 55, 0.2) !important;
+      color: $gold-primary !important;
+      font-weight: 500;
     }
   }
 }
@@ -509,12 +620,31 @@ $border-color: rgba(212, 175, 55, 0.2);
       cursor: pointer;
       color: $text-tertiary;
       padding: 8px;
-      border-radius: 6px;
-      transition: all 0.3s;
+      border-radius: 8px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      
+      &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 8px;
+        background: rgba(212, 175, 55, 0.1);
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
       
       &:hover {
         color: $gold-primary;
-        background: rgba(212, 175, 55, 0.1);
+        transform: scale(1.1);
+        
+        &::before {
+          opacity: 1;
+        }
+      }
+      
+      &:active {
+        transform: scale(0.95);
       }
     }
   }

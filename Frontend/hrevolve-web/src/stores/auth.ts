@@ -48,14 +48,16 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await authApi.getCurrentUser();
       // 后端返回的字段名是驼峰式
       user.value = {
-        id: response.data.userId,
+        id: response.data.id,
         username: response.data.username,
         email: response.data.email,
+        displayName: response.data.displayName || response.data.username,
+        avatar: response.data.avatar,
         tenantId: response.data.tenantId,
         employeeId: response.data.employeeId,
         permissions: response.data.permissions || [],
-        roles: [],
-      } as User;
+        roles: response.data.roles || [],
+      };
       tenantId.value = response.data.tenantId;
       localStorage.setItem('tenantId', response.data.tenantId || '');
     } catch {

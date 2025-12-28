@@ -24,18 +24,20 @@ const i18n = createI18n({
 /** 从后端加载语言包并合并 */
 export async function loadLocaleMessages(locale: string, messages: Record<string, unknown>) {
   // 将后端返回的扁平结构转换为前端需要的格式
+  const currentMessages = i18n.global.messages.value[locale as 'zh-CN' | 'zh-TW' | 'en-US'];
+  
   const formattedMessages = {
     ...messages,
     // 处理命名差异
     dashboard: messages.dashboard_page,
-    attendance: { ...(messages.attendance_page as object), ...(i18n.global.messages.value[locale]?.attendance || {}) },
-    leave: { ...(messages.leave_page as object), ...(i18n.global.messages.value[locale]?.leave || {}) },
-    payroll: { ...(messages.payroll_page as object), ...(i18n.global.messages.value[locale]?.payroll || {}) },
+    attendance: { ...(messages.attendance_page as object), ...(currentMessages?.attendance || {}) },
+    leave: { ...(messages.leave_page as object), ...(currentMessages?.leave || {}) },
+    payroll: { ...(messages.payroll_page as object), ...(currentMessages?.payroll || {}) },
     assistant: messages.assistant_page,
   };
   
   i18n.global.setLocaleMessage(locale, {
-    ...i18n.global.messages.value[locale],
+    ...currentMessages,
     ...formattedMessages,
   });
 }
