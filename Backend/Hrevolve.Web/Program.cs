@@ -15,7 +15,9 @@ builder.WebHost.ConfigureKestrel(options =>
         listenOptions.Protocols = HttpProtocols.Http1AndHttp2AndHttp3;
         listenOptions.UseHttps();
     });
+
 });
+
 
 // 配置Serilog
 Log.Logger = new LoggerConfiguration()
@@ -34,8 +36,10 @@ builder.Services.AddEndpointsApiExplorer();
 // 添加 OpenAPI
 builder.Services.AddOpenApi();
 
+
 // JWT认证
 var jwtSettings = builder.Configuration.GetSection("Jwt");
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -59,9 +63,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
     });
 });
 
@@ -74,6 +76,12 @@ builder.Services.AddAgentServices(builder.Configuration);
 
 // 添加HttpContextAccessor
 builder.Services.AddHttpContextAccessor();
+
+
+
+
+
+
 
 var app = builder.Build();
 
@@ -108,6 +116,7 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
+
 app.UseAuthorization();
 
 // 多租户中间件（必须在认证之后，这样才能从JWT获取租户ID）
@@ -123,8 +132,10 @@ app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Timestamp = Dat
 
 try
 {
+
     Log.Information("启动 Hrevolve HRM 应用...");
-    app.Run();
+
+    await app.RunAsync();
 }
 catch (Exception ex)
 {
@@ -132,5 +143,5 @@ catch (Exception ex)
 }
 finally
 {
-    Log.CloseAndFlush();
+    await Log.CloseAndFlushAsync();
 }

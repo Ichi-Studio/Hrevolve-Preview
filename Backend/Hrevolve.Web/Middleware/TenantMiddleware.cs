@@ -10,6 +10,8 @@ public class TenantMiddleware(RequestDelegate next, ILogger<TenantMiddleware> lo
     [
         "/health",
         "/swagger",
+        "/scalar",
+        "/openapi",
         "/api/auth/login",
         "/api/auth/register",
         "/api/auth/me",
