@@ -11,6 +11,7 @@ export default {
     reset: 'Reset',
     loading: 'Loading...',
     noData: 'No Data',
+    selectRowToView: 'Select a row to view details',
     success: 'Success',
     failed: 'Failed',
     required: 'Required',
@@ -549,6 +550,7 @@ export default {
   orgAdmin: {
     // 组织架构
     structure: 'Organization Structure',
+    totalDepartments: 'Total departments: {count}',
     employeeCount: '{count} employees',
     noData: 'No organization data',
   },

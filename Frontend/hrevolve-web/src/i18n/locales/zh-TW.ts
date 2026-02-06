@@ -11,6 +11,7 @@ export default {
     reset: '重置',
     loading: '載入中...',
     noData: '暫無資料',
+    selectRowToView: '選擇一列查看詳情',
     success: '操作成功',
     failed: '操作失敗',
     required: '必填項',
@@ -549,6 +550,7 @@ export default {
   orgAdmin: {
     // 組織架構
     structure: '組織架構',
+    totalDepartments: '部門總數：{count}',
     employeeCount: '{count}人',
     noData: '暫無組織架構資料',
   },
