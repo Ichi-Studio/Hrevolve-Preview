@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { ElMessage } from 'element-plus';
 import { attendanceApi } from '@/api';
 import type { AttendanceRecord } from '@/types';
 import dayjs from 'dayjs';
@@ -9,10 +10,24 @@ const { t } = useI18n();
 
 const records = ref<AttendanceRecord[]>([]);
 const loading = ref(false);
-const dateRange = ref<[Date, Date]>([
+const dateRange = ref<[Date, Date] | null>([
   dayjs().startOf('month').toDate(),
   dayjs().endOf('month').toDate(),
 ]);
+
+const getSafeRange = (): [Date, Date] => {
+  const fallback: [Date, Date] = [
+    dayjs().startOf('month').toDate(),
+    dayjs().endOf('month').toDate(),
+  ];
+
+  const value = dateRange.value;
+  if (!value || value.length !== 2 || !value[0] || !value[1]) {
+    dateRange.value = fallback;
+    return fallback;
+  }
+  return value;
+};
 
 // 月度统计
 const monthlyStats = ref({
@@ -28,16 +43,17 @@ const monthlyStats = ref({
 // 获取考勤记录
 const fetchRecords = async () => {
   loading.value = true;
+  const [start, end] = getSafeRange();
   try {
     const res = await attendanceApi.getMyRecords({
       page: 1,
       pageSize: 100,
-      startDate: dayjs(dateRange.value[0]).format('YYYY-MM-DD'),
-      endDate: dayjs(dateRange.value[1]).format('YYYY-MM-DD'),
+      startDate: dayjs(start).format('YYYY-MM-DD'),
+      endDate: dayjs(end).format('YYYY-MM-DD'),
     });
     records.value = res.data.items;
   } catch {
-    // 忽略错误
+    ElMessage.error(t('common.failed'));
   } finally {
     loading.value = false;
   }
@@ -45,14 +61,15 @@ const fetchRecords = async () => {
 
 // 获取月度统计
 const fetchStats = async () => {
+  const [start] = getSafeRange();
   try {
     const res = await attendanceApi.getMonthlyStats(
-      dayjs(dateRange.value[0]).year(),
-      dayjs(dateRange.value[0]).month() + 1
+      dayjs(start).year(),
+      dayjs(start).month() + 1
     );
     monthlyStats.value = res.data;
   } catch {
-    // 忽略错误
+    ElMessage.error(t('common.failed'));
   }
 };
 
@@ -75,6 +92,7 @@ const getStatusType = (status: string) => {
 
 // 日期变化
 const handleDateChange = () => {
+  getSafeRange();
   fetchRecords();
   fetchStats();
 };
@@ -124,6 +142,9 @@ onMounted(() => {
     <!-- 记录列表 -->
     <el-card>
       <el-table :data="records" v-loading="loading" stripe>
+        <template #empty>
+          <el-empty :description="t('common.noData')" />
+        </template>
         <el-table-column prop="date" :label="t('attendance.date')" width="120">
           <template #default="{ row }">
             {{ formatDate(row.date) }}
@@ -169,7 +190,8 @@ onMounted(() => {
     margin-bottom: 16px;
     
     .el-col {
-      background: #fff;
+      background: var(--el-bg-color-overlay);
+      border: 1px solid var(--el-border-color-lighter);
       padding: 16px;
       border-radius: 8px;
     }
