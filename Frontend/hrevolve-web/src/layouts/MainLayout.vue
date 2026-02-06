@@ -435,7 +435,7 @@ const handleLogout = () => {
                 <el-dropdown-item :icon="User" @click="router.push('/self-service/profile')">
                   {{ t('menu.profile') }}
                 </el-dropdown-item>
-                <el-dropdown-item :icon="Setting">
+                <el-dropdown-item :icon="Setting" @click="router.push('/settings')">
                   {{ t('common.settings') || '设置' }}
                 </el-dropdown-item>
                 <el-dropdown-item divided :icon="SwitchButton" @click="handleLogout">
@@ -649,6 +649,14 @@ $header-height: 64px;
       :deep(.menu-icon svg) {
         display: block;
         transform-origin: 50% 50%;
+      }
+
+      :deep(.el-menu-tooltip__trigger) {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
     }
     
