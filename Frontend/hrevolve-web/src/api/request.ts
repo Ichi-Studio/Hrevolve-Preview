@@ -53,6 +53,9 @@ service.interceptors.response.use(
     
     if (response) {
       switch (response.status) {
+        case 400:
+          ElMessage.error(response.data?.message || '请求失败');
+          break;
         case 401:
           // Token过期或未认证
           ElMessage.error('登录已过期，请重新登录');
@@ -61,7 +64,7 @@ service.interceptors.response.use(
           window.location.href = '/login';
           break;
         case 403:
-          ElMessage.error('没有权限访问该资源');
+          ElMessage.error(response.data?.message || '没有权限访问该资源');
           break;
         case 404:
           ElMessage.error('请求的资源不存在');

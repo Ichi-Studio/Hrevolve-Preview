@@ -1,6 +1,6 @@
 import { request } from '../request';
 import type { 
-  SystemConfig, ApprovalFlow, User,
+  SystemConfig, ApprovalFlow, UserExtended,
   PageRequest, PageResponse 
 } from '@/types';
 
@@ -32,33 +32,35 @@ export const settingsApi = {
   
   /** 获取用户列表 */
   getUsers(params: PageRequest & { keyword?: string; role?: string; status?: string }) {
-    return request.get<PageResponse<User>>('/settings/users', { params });
+    return request.get<PageResponse<UserExtended>>('/settings/users', { params });
   },
   
   /** 获取用户详情 */
   getUser(id: string) {
-    return request.get<User>(`/settings/users/${id}`);
+    return request.get<UserExtended>(`/settings/users/${id}`);
   },
   
   /** 创建用户 */
   createUser(data: {
     username: string;
-    email: string;
-    password: string;
+    email?: string;
+    password?: string;
     displayName: string;
     roles: string[];
     employeeId?: string;
+    phone?: string;
+    isActive?: boolean;
   }) {
-    return request.post<User>('/settings/users', data);
+    return request.post<UserExtended>('/settings/users', data);
   },
   
   /** 更新用户 */
-  updateUser(id: string, data: Partial<User>) {
-    return request.put<User>(`/settings/users/${id}`, data);
+  updateUser(id: string, data: Partial<UserExtended>) {
+    return request.put<UserExtended>(`/settings/users/${id}`, data);
   },
   
   /** 重置用户密码 */
-  resetUserPassword(id: string, newPassword: string) {
+  resetUserPassword(id: string, newPassword?: string) {
     return request.post(`/settings/users/${id}/reset-password`, { newPassword });
   },
   

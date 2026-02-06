@@ -53,7 +53,7 @@ export async function loadLocaleMessages(locale: string, messages: Record<string
   };
   
   // 合并：本地翻译优先，后端翻译作为补充
-  const mergedMessages = deepMerge(currentMessages as Record<string, unknown>, messages as Record<string, unknown>);
+  const mergedMessages = deepMerge(currentMessages as Record<string, unknown>, messages as Record<string, unknown>) as typeof zhCN;
   
   i18n.global.setLocaleMessage(locale, mergedMessages);
 }

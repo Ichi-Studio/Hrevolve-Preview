@@ -75,8 +75,8 @@ export const insuranceApi = {
   },
   
   /** 终止员工保险 */
-  terminateEmployeeInsurance(id: string, data: { expiryDate: string }) {
-    return request.post(`/insurance/employees/${id}/terminate`, data);
+  terminateEmployeeInsurance(id: string, data?: { expiryDate?: string }) {
+    return request.post(`/insurance/employees/${id}/terminate`, data ?? {});
   },
   
   /** 删除员工保险 */

@@ -560,16 +560,18 @@ export interface PayrollPeriod {
 /** 保险方案 */
 export interface InsurancePlan {
   id: string;
-  code: string;
+  code?: string;
   name: string;
-  type: 'Social' | 'Commercial' | 'Supplementary';
+  type: 'health' | 'life' | 'accident' | 'pension' | 'Social' | 'Commercial' | 'Supplementary';
   provider?: string;
-  coverage: string;
-  employeeRate: number;
-  companyRate: number;
+  coverage?: number;
+  premium?: number;
+  description?: string;
+  employeeRate?: number;
+  companyRate?: number;
   baseMin?: number;
   baseMax?: number;
-  effectiveDate: string;
+  effectiveDate?: string;
   expiryDate?: string;
   isActive: boolean;
 }
@@ -579,14 +581,19 @@ export interface EmployeeInsurance {
   id: string;
   employeeId: string;
   employeeName?: string;
-  insurancePlanId: string;
+  insurancePlanId?: string;
   insurancePlanName?: string;
-  base: number;
-  employeeAmount: number;
-  companyAmount: number;
-  effectiveDate: string;
+  planId?: string;
+  planName?: string;
+  startDate?: string;
+  endDate?: string;
+  premium?: number;
+  base?: number;
+  employeeAmount?: number;
+  companyAmount?: number;
+  effectiveDate?: string;
   expiryDate?: string;
-  status: 'Active' | 'Suspended' | 'Terminated';
+  status: 'active' | 'terminated' | 'Active' | 'Suspended' | 'Terminated';
 }
 
 /** 福利项目 */

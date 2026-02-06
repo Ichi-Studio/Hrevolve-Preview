@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, markRaw, shallowRef } from 'vue';
+import { computed, ref, onMounted, onBeforeUnmount, nextTick, markRaw, shallowRef } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { ElMessage } from 'element-plus';
 import { useAppStore, useAuthStore } from '@/stores';
 import type { Language } from '@/stores/app';
-import { supportedLocales, loadLocaleMessages } from '@/i18n';
+import { supportedLocales } from '@/i18n';
 import { localizationApi, type LocaleInfo } from '@/api';
 import {
   HomeFilled,
@@ -32,6 +32,11 @@ const { t, locale } = useI18n();
 const appStore = useAppStore();
 const authStore = useAuthStore();
 
+const sidebarScrollRef = ref<HTMLElement | null>(null);
+const sidebarScrollable = ref(false);
+const sidebarAtTop = ref(true);
+const sidebarAtBottom = ref(true);
+
 // 语言列表（优先从后端获取）
 const locales = ref<LocaleInfo[]>(supportedLocales);
 const isChangingLang = ref(false);
@@ -48,6 +53,42 @@ onMounted(async () => {
   }
 });
 
+const updateSidebarScrollState = () => {
+  const el = sidebarScrollRef.value;
+  if (!el) return;
+  const { scrollTop, scrollHeight, clientHeight } = el;
+  const epsilon = 1;
+  const isScrollable = scrollHeight - clientHeight > epsilon;
+  sidebarScrollable.value = isScrollable;
+  sidebarAtTop.value = !isScrollable || scrollTop <= epsilon;
+  sidebarAtBottom.value = !isScrollable || scrollTop + clientHeight >= scrollHeight - epsilon;
+};
+
+let sidebarMutationObserver: MutationObserver | null = null;
+
+onMounted(() => {
+  nextTick(() => {
+    updateSidebarScrollState();
+
+    const el = sidebarScrollRef.value;
+    if (!el) return;
+
+    el.addEventListener('scroll', updateSidebarScrollState, { passive: true });
+    window.addEventListener('resize', updateSidebarScrollState, { passive: true });
+
+    sidebarMutationObserver = new MutationObserver(() => updateSidebarScrollState());
+    sidebarMutationObserver.observe(el, { childList: true, subtree: true, attributes: true });
+  });
+});
+
+onBeforeUnmount(() => {
+  const el = sidebarScrollRef.value;
+  if (el) el.removeEventListener('scroll', updateSidebarScrollState);
+  window.removeEventListener('resize', updateSidebarScrollState);
+  sidebarMutationObserver?.disconnect();
+  sidebarMutationObserver = null;
+});
+
 // 菜单配置 - 使用 shallowRef 避免深度响应式，提升性能
 // 图标使用 markRaw 包裹避免响应式转换
 const menuItems = shallowRef([
@@ -55,11 +96,13 @@ const menuItems = shallowRef([
     index: '/',
     title: 'menu.dashboard',
     icon: markRaw(HomeFilled),
+    iconClass: 'icon-home',
   },
   {
     index: '/self-service',
     title: 'menu.selfService',
     icon: markRaw(User),
+    iconClass: 'icon-user',
     children: [
       { index: '/self-service/profile', title: 'menu.profile' },
       { index: '/self-service/attendance', title: 'menu.myAttendance' },
@@ -71,6 +114,7 @@ const menuItems = shallowRef([
     index: '/assistant',
     title: 'menu.assistant',
     icon: markRaw(ChatDotRound),
+    iconClass: 'icon-chat',
   },
   {
     index: '/organization',
@@ -86,6 +130,7 @@ const menuItems = shallowRef([
     index: '/employees',
     title: 'menu.employees',
     icon: markRaw(UserFilled),
+    iconClass: 'icon-userfilled',
     permission: 'employee:read',
   },
   {
@@ -287,46 +332,54 @@ const handleLogout = () => {
         <span v-show="!appStore.sidebarCollapsed" class="logo-text">Hrevolve</span>
       </div>
       
-      <el-menu
-        :default-active="activeMenu"
-        :collapse="appStore.sidebarCollapsed"
-        :collapse-transition="false"
-        :unique-opened="true"
-        router
-        class="sidebar-menu"
+      <div
+        ref="sidebarScrollRef"
+        class="sidebar-scroll"
+        :class="{ 'is-scrollable': sidebarScrollable, 'is-top': sidebarAtTop, 'is-bottom': sidebarAtBottom }"
       >
-        <template v-for="item in filteredMenuItems" :key="item.index">
-          <!-- 有子菜单 -->
-          <el-sub-menu v-if="item.children" :index="item.index" :popper-class="'sidebar-submenu-popper'">
-            <template #title>
-              <el-icon><component :is="item.icon" /></el-icon>
-              <span>{{ t(item.title) }}</span>
-            </template>
-            <el-menu-item
-              v-for="child in item.children"
-              :key="child.index"
-              :index="child.index"
-            >
-              {{ t(child.title) }}
+        <el-menu
+          :default-active="activeMenu"
+          :collapse="appStore.sidebarCollapsed"
+          :collapse-transition="false"
+          :unique-opened="true"
+          router
+          class="sidebar-menu"
+        >
+          <template v-for="item in filteredMenuItems" :key="item.index">
+            <el-sub-menu v-if="item.children" :index="item.index" :popper-class="'sidebar-submenu-popper'">
+              <template #title>
+                <el-icon :class="['menu-icon', item.iconClass]"><component :is="item.icon" /></el-icon>
+                <span>{{ t(item.title) }}</span>
+              </template>
+              <el-menu-item
+                v-for="child in item.children"
+                :key="child.index"
+                :index="child.index"
+              >
+                {{ t(child.title) }}
+              </el-menu-item>
+            </el-sub-menu>
+            
+            <el-menu-item v-else :index="item.index">
+              <el-icon :class="['menu-icon', item.iconClass]"><component :is="item.icon" /></el-icon>
+              <template #title>{{ t(item.title) }}</template>
             </el-menu-item>
-          </el-sub-menu>
-          
-          <!-- 无子菜单 -->
-          <el-menu-item v-else :index="item.index">
-            <el-icon><component :is="item.icon" /></el-icon>
-            <template #title>{{ t(item.title) }}</template>
-          </el-menu-item>
-        </template>
-      </el-menu>
+          </template>
+        </el-menu>
+      </div>
     </el-aside>
     
     <el-container>
       <!-- 顶部导航 -->
-      <el-header class="header">
+      <el-header class="header" height="64px">
         <div class="header-left">
           <el-icon
             class="collapse-btn"
             @click="appStore.toggleSidebar"
+            tabindex="0"
+            :aria-label="appStore.sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
+            @keydown.enter.prevent="appStore.toggleSidebar"
+            @keydown.space.prevent="appStore.toggleSidebar"
           >
             <Fold v-if="!appStore.sidebarCollapsed" />
             <Expand v-else />
@@ -418,6 +471,7 @@ $text-primary: #FFFFFF;
 $text-secondary: rgba(255, 255, 255, 0.85);
 $text-tertiary: rgba(255, 255, 255, 0.65);
 $border-color: rgba(212, 175, 55, 0.2);
+$header-height: 64px;
 
 .main-layout {
   height: 100vh;
@@ -430,6 +484,9 @@ $border-color: rgba(212, 175, 55, 0.2);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
   position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   
   // 添加侧边栏阴影效果
   &::after {
@@ -453,13 +510,14 @@ $border-color: rgba(212, 175, 55, 0.2);
   }
   
   .logo {
-    height: 64px;
+    height: $header-height;
     display: flex;
     align-items: center;
     padding: 0 16px;
     border-bottom: 1px solid $border-color;
     background: linear-gradient(90deg, rgba(212, 175, 55, 0.08) 0%, transparent 100%);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
     
     .logo-icon {
       width: 36px;
@@ -499,11 +557,100 @@ $border-color: rgba(212, 175, 55, 0.2);
       transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
+
+  .sidebar-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: relative;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+    }
+
+    &::before,
+    &::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 14px;
+      pointer-events: none;
+      z-index: 2;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    &::before {
+      top: 0;
+      background: linear-gradient(180deg, rgba(10, 10, 10, 0.85) 0%, rgba(10, 10, 10, 0) 100%);
+    }
+
+    &::after {
+      bottom: 0;
+      background: linear-gradient(0deg, rgba(13, 13, 13, 0.85) 0%, rgba(13, 13, 13, 0) 100%);
+    }
+
+    &.is-scrollable:not(.is-top)::before {
+      opacity: 1;
+    }
+
+    &.is-scrollable:not(.is-bottom)::after {
+      opacity: 1;
+    }
+  }
   
   .sidebar-menu {
     border-right: none;
     background-color: transparent;
     padding: 8px;
+
+    &.el-menu--collapse {
+      padding: 8px 6px;
+    }
+
+    &.el-menu--collapse {
+      :deep(.el-menu-item),
+      :deep(.el-sub-menu__title) {
+        padding: 0 !important;
+        height: 44px;
+        line-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      :deep(.el-menu-item .el-icon),
+      :deep(.el-sub-menu__title .el-icon) {
+        margin-right: 0 !important;
+        font-size: 18px;
+      }
+
+      :deep(.el-sub-menu__icon-arrow) {
+        display: none;
+      }
+    }
+
+    :deep(.menu-icon) {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    &.el-menu--collapse {
+      :deep(.menu-icon) {
+        width: 18px;
+        height: 18px;
+      }
+
+      :deep(.menu-icon svg) {
+        display: block;
+        transform-origin: 50% 50%;
+      }
+    }
     
     // 使用 GPU 加速优化动画性能
     :deep(.el-menu-item),
@@ -640,6 +787,7 @@ $border-color: rgba(212, 175, 55, 0.2);
   background: linear-gradient(90deg, rgba(13, 13, 13, 0.98) 0%, rgba(26, 26, 26, 0.98) 100%);
   border-bottom: 1px solid $border-color;
   backdrop-filter: blur(10px);
+  height: $header-height;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -654,24 +802,31 @@ $border-color: rgba(212, 175, 55, 0.2);
       font-size: 20px;
       cursor: pointer;
       color: $text-tertiary;
-      padding: 8px;
+      width: 36px;
+      height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       border-radius: 8px;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: transform 0.15s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
       position: relative;
+      background: rgba(212, 175, 55, 0.06);
+      border: 1px solid rgba(212, 175, 55, 0.16);
       
       &::before {
         content: '';
         position: absolute;
         inset: 0;
         border-radius: 8px;
-        background: rgba(212, 175, 55, 0.1);
+        background: rgba(212, 175, 55, 0.12);
         opacity: 0;
         transition: opacity 0.3s;
       }
       
       &:hover {
         color: $gold-primary;
-        transform: scale(1.1);
+        border-color: rgba(212, 175, 55, 0.32);
+        transform: translateY(-1px);
         
         &::before {
           opacity: 1;
@@ -679,7 +834,12 @@ $border-color: rgba(212, 175, 55, 0.2);
       }
       
       &:active {
-        transform: scale(0.95);
+        transform: translateY(0);
+      }
+
+      &:focus-visible {
+        outline: 2px solid rgba(212, 175, 55, 0.5);
+        outline-offset: 2px;
       }
     }
   }
