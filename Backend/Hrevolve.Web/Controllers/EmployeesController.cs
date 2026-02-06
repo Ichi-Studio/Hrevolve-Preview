@@ -6,7 +6,7 @@ namespace Hrevolve.Web.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class EmployeesController(IMediator mediator) : ControllerBase
+public class EmployeesController(Hrevolve.Infrastructure.Persistence.HrevolveDbContext context) : ControllerBase
 {
     
     /// <summary>
@@ -23,14 +23,82 @@ public class EmployeesController(IMediator mediator) : ControllerBase
         [FromQuery] string? status = null,
         CancellationToken cancellationToken = default)
     {
-        // TODO: 实现获取员工列表查询
-        return Ok(new 
-        { 
-            message = "获取员工列表功能待实现",
-            items = Array.Empty<object>(),
-            total = 0,
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 200);
+
+        var baseQuery =
+            from e in context.Employees
+            join j in context.JobHistories on e.Id equals j.EmployeeId
+            where j.EffectiveEndDate == new DateOnly(9999, 12, 31) && j.CorrectionStatus == null
+            join dept in context.OrganizationUnits on j.DepartmentId equals dept.Id
+            join pos in context.Positions on j.PositionId equals pos.Id
+            select new
+            {
+                e.Id,
+                e.EmployeeNumber,
+                e.FirstName,
+                e.LastName,
+                e.Email,
+                e.Phone,
+                Status = e.Status.ToString(),
+                e.HireDate,
+                DepartmentId = dept.Id,
+                DepartmentName = dept.Name,
+                PositionId = pos.Id,
+                PositionName = pos.Name
+            };
+
+        if (!string.IsNullOrWhiteSpace(keyword))
+        {
+            var k = keyword.Trim();
+            baseQuery = baseQuery.Where(x =>
+                x.EmployeeNumber.Contains(k) ||
+                (x.LastName + x.FirstName).Contains(k) ||
+                (x.Email != null && x.Email.Contains(k)) ||
+                (x.Phone != null && x.Phone.Contains(k)));
+        }
+
+        if (departmentId.HasValue)
+        {
+            baseQuery = baseQuery.Where(x => x.DepartmentId == departmentId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            baseQuery = baseQuery.Where(x => x.Status == status);
+        }
+
+        var totalCount = await baseQuery.CountAsync(cancellationToken);
+        var items = await baseQuery
+            .OrderBy(x => x.EmployeeNumber)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(x => new
+            {
+                id = x.Id,
+                employeeNo = x.EmployeeNumber,
+                firstName = x.FirstName,
+                lastName = x.LastName,
+                fullName = x.LastName + x.FirstName,
+                email = x.Email ?? string.Empty,
+                phone = x.Phone,
+                departmentId = x.DepartmentId,
+                departmentName = x.DepartmentName,
+                positionId = x.PositionId,
+                positionName = x.PositionName,
+                status = x.Status,
+                hireDate = x.HireDate
+            })
+            .ToListAsync(cancellationToken);
+
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+        return Ok(new
+        {
+            items,
+            total = totalCount,
             page,
-            pageSize
+            pageSize,
+            totalPages
         });
     }
     
@@ -41,14 +109,10 @@ public class EmployeesController(IMediator mediator) : ControllerBase
     [RequirePermission(Permissions.EmployeeRead)]
     public async Task<IActionResult> GetEmployee(Guid id, CancellationToken cancellationToken)
     {
-        var result = await mediator.Send(new GetEmployeeQuery(id), cancellationToken);
-        
-        if (result.IsFailure)
-        {
-            return NotFound(new { code = result.ErrorCode, message = result.Error });
-        }
-        
-        return Ok(result.Value);
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var dto = await BuildEmployeeDtoAsync(id, today, cancellationToken);
+        if (dto == null) return NotFound();
+        return Ok(dto);
     }
     
     /// <summary>
@@ -61,14 +125,94 @@ public class EmployeesController(IMediator mediator) : ControllerBase
         [FromQuery] DateOnly date, 
         CancellationToken cancellationToken)
     {
-        var result = await mediator.Send(new GetEmployeeAtDateQuery(id, date), cancellationToken);
-        
-        if (result.IsFailure)
+        var dto = await BuildEmployeeDtoAsync(id, date, cancellationToken);
+        if (dto == null) return NotFound();
+        return Ok(dto);
+    }
+
+    [HttpGet("{id:guid}/job-history")]
+    [RequirePermission(Permissions.EmployeeRead)]
+    public async Task<IActionResult> GetJobHistory(Guid id, CancellationToken cancellationToken)
+    {
+        var items =
+            await (from j in context.JobHistories
+                where j.EmployeeId == id && j.CorrectionStatus != Hrevolve.Domain.Employees.CorrectionStatus.Voided
+                join dept in context.OrganizationUnits on j.DepartmentId equals dept.Id
+                join pos in context.Positions on j.PositionId equals pos.Id
+                orderby j.EffectiveStartDate descending
+                select new
+                {
+                    id = j.Id,
+                    employeeId = j.EmployeeId,
+                    positionId = j.PositionId,
+                    positionName = pos.Name,
+                    departmentId = j.DepartmentId,
+                    departmentName = dept.Name,
+                    salary = j.BaseSalary,
+                    effectiveStartDate = j.EffectiveStartDate,
+                    effectiveEndDate = j.EffectiveEndDate,
+                    changeReason = j.ChangeReason
+                }).ToListAsync(cancellationToken);
+
+        return Ok(items);
+    }
+
+    private async Task<object?> BuildEmployeeDtoAsync(Guid employeeId, DateOnly date, CancellationToken cancellationToken)
+    {
+        var employee = await context.Employees.FirstOrDefaultAsync(e => e.Id == employeeId, cancellationToken);
+        if (employee == null) return null;
+
+        var job = await context.JobHistories
+            .Where(j => j.EmployeeId == employeeId && j.CorrectionStatus != Hrevolve.Domain.Employees.CorrectionStatus.Voided)
+            .Where(j => j.EffectiveStartDate <= date && j.EffectiveEndDate >= date)
+            .OrderByDescending(j => j.EffectiveStartDate)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        Guid positionId = Guid.Empty;
+        string? positionName = null;
+        Guid departmentId = Guid.Empty;
+        string? departmentName = null;
+
+        if (job != null)
         {
-            return NotFound(new { code = result.ErrorCode, message = result.Error });
+            positionId = job.PositionId;
+            departmentId = job.DepartmentId;
+
+            positionName = await context.Positions.Where(p => p.Id == positionId).Select(p => p.Name).FirstOrDefaultAsync(cancellationToken);
+            departmentName = await context.OrganizationUnits.Where(d => d.Id == departmentId).Select(d => d.Name).FirstOrDefaultAsync(cancellationToken);
         }
-        
-        return Ok(result.Value);
+
+        string? managerName = null;
+        if (employee.DirectManagerId.HasValue)
+        {
+            managerName = await context.Employees
+                .Where(m => m.Id == employee.DirectManagerId.Value)
+                .Select(m => m.LastName + m.FirstName)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        return new
+        {
+            id = employee.Id,
+            employeeNo = employee.EmployeeNumber,
+            firstName = employee.FirstName,
+            lastName = employee.LastName,
+            fullName = employee.FullName,
+            email = employee.Email ?? string.Empty,
+            phone = employee.Phone,
+            gender = employee.Gender.ToString(),
+            birthDate = employee.DateOfBirth,
+            hireDate = employee.HireDate,
+            terminationDate = employee.TerminationDate,
+            status = employee.Status.ToString(),
+            employmentType = employee.EmploymentType.ToString(),
+            departmentId,
+            departmentName,
+            positionId,
+            positionName,
+            managerId = employee.DirectManagerId,
+            managerName
+        };
     }
     
     /// <summary>
@@ -80,14 +224,7 @@ public class EmployeesController(IMediator mediator) : ControllerBase
         [FromBody] CreateEmployeeCommand command, 
         CancellationToken cancellationToken)
     {
-        var result = await mediator.Send(command, cancellationToken);
-        
-        if (result.IsFailure)
-        {
-            return BadRequest(new { code = result.ErrorCode, message = result.Error });
-        }
-        
-        return CreatedAtAction(nameof(GetEmployee), new { id = result.Value }, new { id = result.Value });
+        return BadRequest();
     }
     
     /// <summary>
@@ -100,8 +237,7 @@ public class EmployeesController(IMediator mediator) : ControllerBase
         [FromBody] UpdateEmployeeRequest request, 
         CancellationToken cancellationToken)
     {
-        // TODO: 实现更新员工命令
-        return Ok(new { message = "员工更新功能待实现" });
+        return BadRequest();
     }
     
     /// <summary>
@@ -114,8 +250,7 @@ public class EmployeesController(IMediator mediator) : ControllerBase
         [FromBody] TerminateEmployeeRequest request, 
         CancellationToken cancellationToken)
     {
-        // TODO: 实现员工离职命令
-        return Ok(new { message = "员工离职功能待实现" });
+        return BadRequest();
     }
 }
 

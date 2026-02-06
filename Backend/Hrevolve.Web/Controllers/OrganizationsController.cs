@@ -6,7 +6,7 @@ namespace Hrevolve.Web.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class OrganizationsController(IMediator mediator) : ControllerBase
+public class OrganizationsController(Hrevolve.Infrastructure.Persistence.HrevolveDbContext context) : ControllerBase
 {
     
     /// <summary>
@@ -16,8 +16,66 @@ public class OrganizationsController(IMediator mediator) : ControllerBase
     [RequirePermission(Permissions.OrganizationRead)]
     public async Task<IActionResult> GetOrganizationTree(CancellationToken cancellationToken)
     {
-        // TODO: 实现获取组织架构树查询
-        return Ok(new { message = "获取组织架构树功能待实现" });
+        var units = await context.OrganizationUnits
+            .OrderBy(u => u.Level)
+            .ThenBy(u => u.SortOrder)
+            .ToListAsync(cancellationToken);
+
+        if (units.Count == 0) return Ok(Array.Empty<object>());
+
+        var currentJobs =
+            from j in context.JobHistories
+            where j.EffectiveEndDate == new DateOnly(9999, 12, 31) && j.CorrectionStatus == null
+            join e in context.Employees on j.EmployeeId equals e.Id
+            where e.Status != Hrevolve.Domain.Employees.EmploymentStatus.Terminated
+            select new { j.DepartmentId };
+
+        var deptCounts = await currentJobs
+            .GroupBy(x => x.DepartmentId)
+            .Select(g => new { DepartmentId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.DepartmentId, x => x.Count, cancellationToken);
+
+        var managers = await context.Employees
+            .Select(e => new { e.Id, Name = e.LastName + e.FirstName })
+            .ToDictionaryAsync(x => x.Id, x => x.Name, cancellationToken);
+
+        var nodes = units.ToDictionary(
+            u => u.Id,
+            u => new OrgNode
+            {
+                id = u.Id,
+                code = u.Code,
+                name = u.Name,
+                parentId = u.ParentId,
+                path = u.Path,
+                level = u.Level,
+                sortOrder = u.SortOrder,
+                managerId = u.ManagerId,
+                managerName = u.ManagerId.HasValue && managers.TryGetValue(u.ManagerId.Value, out var mn) ? mn : null,
+                employeeCount = deptCounts.TryGetValue(u.Id, out var c) ? c : 0,
+                children = []
+            });
+
+        foreach (var node in nodes.Values)
+        {
+            if (node.parentId.HasValue && nodes.TryGetValue(node.parentId.Value, out var parent))
+            {
+                parent.children.Add(node);
+            }
+        }
+
+        var roots = nodes.Values.Where(n => !n.parentId.HasValue).ToList();
+
+        var orderedByLevelDesc = units.OrderByDescending(u => u.Level).Select(u => nodes[u.Id]).ToList();
+        foreach (var node in orderedByLevelDesc)
+        {
+            if (node.parentId.HasValue && nodes.TryGetValue(node.parentId.Value, out var parent))
+            {
+                parent.employeeCount += node.employeeCount;
+            }
+        }
+
+        return Ok(roots);
     }
     
     /// <summary>
@@ -27,8 +85,9 @@ public class OrganizationsController(IMediator mediator) : ControllerBase
     [RequirePermission(Permissions.OrganizationRead)]
     public async Task<IActionResult> GetOrganizationUnit(Guid id, CancellationToken cancellationToken)
     {
-        // TODO: 实现获取组织单元详情查询
-        return Ok(new { message = "获取组织单元详情功能待实现", id });
+        var unit = await context.OrganizationUnits.FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
+        if (unit == null) return NotFound();
+        return Ok(unit);
     }
     
     /// <summary>
@@ -40,8 +99,7 @@ public class OrganizationsController(IMediator mediator) : ControllerBase
         [FromBody] CreateOrganizationUnitRequest request,
         CancellationToken cancellationToken)
     {
-        // TODO: 实现创建组织单元命令
-        return Ok(new { message = "创建组织单元功能待实现" });
+        return BadRequest();
     }
     
     /// <summary>
@@ -54,8 +112,7 @@ public class OrganizationsController(IMediator mediator) : ControllerBase
         [FromBody] UpdateOrganizationUnitRequest request,
         CancellationToken cancellationToken)
     {
-        // TODO: 实现更新组织单元命令
-        return Ok(new { message = "更新组织单元功能待实现" });
+        return BadRequest();
     }
     
     /// <summary>
@@ -68,8 +125,7 @@ public class OrganizationsController(IMediator mediator) : ControllerBase
         [FromQuery] bool includeSubUnits = false,
         CancellationToken cancellationToken = default)
     {
-        // TODO: 实现获取组织员工查询
-        return Ok(new { message = "获取组织员工功能待实现" });
+        return BadRequest();
     }
     
     /// <summary>
@@ -79,8 +135,35 @@ public class OrganizationsController(IMediator mediator) : ControllerBase
     [RequirePermission(Permissions.OrganizationRead)]
     public async Task<IActionResult> GetAllPositions(CancellationToken cancellationToken)
     {
-        // TODO: 实现获取所有职位查询
-        return Ok(new { message = "获取所有职位功能待实现" });
+        var items = await context.Positions
+            .AsNoTracking()
+            .OrderBy(p => p.Code)
+            .Select(p => new
+            {
+                id = p.Id,
+                code = p.Code,
+                name = p.Name,
+                level = p.Level,
+                description = p.Description,
+                salaryMin = p.SalaryRangeMin,
+                salaryMax = p.SalaryRangeMax,
+                isActive = p.IsActive
+            })
+            .ToListAsync(cancellationToken);
+
+        var result = items.Select(p => new
+        {
+            p.id,
+            p.code,
+            p.name,
+            level = (int)p.level,
+            p.description,
+            p.salaryMin,
+            p.salaryMax,
+            p.isActive
+        });
+
+        return Ok(result);
     }
     
     /// <summary>
@@ -90,8 +173,51 @@ public class OrganizationsController(IMediator mediator) : ControllerBase
     [RequirePermission(Permissions.OrganizationRead)]
     public async Task<IActionResult> GetOrganizationPositions(Guid id, CancellationToken cancellationToken)
     {
-        // TODO: 实现获取组织职位查询
-        return Ok(new { message = "获取组织职位功能待实现" });
+        var items = await context.Positions
+            .AsNoTracking()
+            .Where(p => p.OrganizationUnitId == id)
+            .OrderBy(p => p.Code)
+            .Select(p => new
+            {
+                id = p.Id,
+                code = p.Code,
+                name = p.Name,
+                level = p.Level,
+                description = p.Description,
+                salaryMin = p.SalaryRangeMin,
+                salaryMax = p.SalaryRangeMax,
+                isActive = p.IsActive
+            })
+            .ToListAsync(cancellationToken);
+
+        var result = items.Select(p => new
+        {
+            p.id,
+            p.code,
+            p.name,
+            level = (int)p.level,
+            p.description,
+            p.salaryMin,
+            p.salaryMax,
+            p.isActive
+        });
+
+        return Ok(result);
+    }
+
+    private sealed class OrgNode
+    {
+        public Guid id { get; init; }
+        public string code { get; init; } = null!;
+        public string name { get; init; } = null!;
+        public Guid? parentId { get; init; }
+        public string path { get; init; } = null!;
+        public int level { get; init; }
+        public int sortOrder { get; init; }
+        public Guid? managerId { get; init; }
+        public string? managerName { get; init; }
+        public int employeeCount { get; set; }
+        public List<OrgNode> children { get; init; } = null!;
     }
 }
 

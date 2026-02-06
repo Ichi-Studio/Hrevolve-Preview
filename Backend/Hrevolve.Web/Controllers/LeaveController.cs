@@ -6,7 +6,10 @@ namespace Hrevolve.Web.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class LeaveController(IMediator mediator) : ControllerBase
+public class LeaveController(
+    IMediator mediator,
+    Hrevolve.Infrastructure.Persistence.HrevolveDbContext context,
+    ICurrentUserAccessor currentUserAccessor) : ControllerBase
 {
     
     /// <summary>
@@ -40,15 +43,71 @@ public class LeaveController(IMediator mediator) : ControllerBase
         [FromQuery] Guid? employeeId = null,
         CancellationToken cancellationToken = default)
     {
-        // TODO: 实现获取请假申请列表查询
-        return Ok(new 
-        { 
-            message = "获取请假申请列表功能待实现",
-            items = Array.Empty<object>(),
-            total = 0,
-            page,
-            pageSize
-        });
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 200);
+
+        var query =
+            from r in context.LeaveRequests
+            join e in context.Employees on r.EmployeeId equals e.Id
+            join t in context.LeaveTypes on r.LeaveTypeId equals t.Id
+            select new { r, EmployeeName = e.LastName + e.FirstName, EmployeeNo = e.EmployeeNumber, LeaveTypeName = t.Name, LeaveTypeColor = t.Color };
+
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            query = query.Where(x => x.r.Status.ToString() == status);
+        }
+
+        if (employeeId.HasValue)
+        {
+            query = query.Where(x => x.r.EmployeeId == employeeId.Value);
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var itemsRaw = await query
+            .OrderByDescending(x => x.r.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        var requestIds = itemsRaw.Select(x => x.r.Id).Distinct().ToList();
+        var approvals = await context.Set<Hrevolve.Domain.Leave.LeaveApproval>()
+            .Where(a => requestIds.Contains(a.LeaveRequestId))
+            .ToListAsync(cancellationToken);
+        var approvalLookup = approvals
+            .GroupBy(a => a.LeaveRequestId)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(a => a.ApprovedAt).FirstOrDefault());
+
+        var departmentLookup = await GetDepartmentNamesAsync(itemsRaw.Select(x => x.r.EmployeeId).Distinct().ToList(), cancellationToken);
+
+        var items = itemsRaw.Select(x =>
+        {
+            approvalLookup.TryGetValue(x.r.Id, out var approval);
+            return new
+            {
+                id = x.r.Id,
+                employeeId = x.r.EmployeeId,
+                employeeName = x.EmployeeName,
+                employeeNo = x.EmployeeNo,
+                departmentName = departmentLookup.TryGetValue(x.r.EmployeeId, out var dn) ? dn : null,
+                leaveTypeId = x.r.LeaveTypeId,
+                leaveTypeName = x.LeaveTypeName,
+                leaveTypeColor = x.LeaveTypeColor,
+                startDate = x.r.StartDate,
+                endDate = x.r.EndDate,
+                days = x.r.TotalDays,
+                reason = x.r.Reason,
+                attachments = ParseAttachmentUrls(x.r.Attachments),
+                status = x.r.Status.ToString(),
+                approverId = approval?.ApproverId,
+                approverName = approval != null ? "系统" : null,
+                approvedAt = approval?.ApprovedAt,
+                approverComment = approval?.Comments,
+                createdAt = x.r.CreatedAt
+            };
+        }).ToList();
+
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+        return Ok(new { items, total = totalCount, page, pageSize, totalPages });
     }
     
     /// <summary>
@@ -61,15 +120,7 @@ public class LeaveController(IMediator mediator) : ControllerBase
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
-        // TODO: 实现获取待审批请假申请查询
-        return Ok(new 
-        { 
-            message = "获取待审批请假申请功能待实现",
-            items = Array.Empty<object>(),
-            total = 0,
-            page,
-            pageSize
-        });
+        return await GetLeaveRequests(page, pageSize, status: LeaveRequestStatus.Pending.ToString(), employeeId: null, cancellationToken: cancellationToken);
     }
     
     /// <summary>
@@ -79,8 +130,43 @@ public class LeaveController(IMediator mediator) : ControllerBase
     [RequirePermission(Permissions.LeaveRead)]
     public async Task<IActionResult> GetLeaveRequest(Guid id, CancellationToken cancellationToken)
     {
-        // TODO: 实现获取请假详情查询
-        return Ok(new { message = "获取请假详情功能待实现", id });
+        var result = await (from r in context.LeaveRequests
+            where r.Id == id
+            join e in context.Employees on r.EmployeeId equals e.Id
+            join t in context.LeaveTypes on r.LeaveTypeId equals t.Id
+            select new { r, EmployeeName = e.LastName + e.FirstName, EmployeeNo = e.EmployeeNumber, LeaveTypeName = t.Name, LeaveTypeColor = t.Color })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (result == null) return NotFound();
+
+        var departmentLookup = await GetDepartmentNamesAsync([result.r.EmployeeId], cancellationToken);
+        var approval = await context.Set<Hrevolve.Domain.Leave.LeaveApproval>()
+            .Where(a => a.LeaveRequestId == result.r.Id)
+            .OrderByDescending(a => a.ApprovedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return Ok(new
+        {
+            id = result.r.Id,
+            employeeId = result.r.EmployeeId,
+            employeeName = result.EmployeeName,
+            employeeNo = result.EmployeeNo,
+            departmentName = departmentLookup.TryGetValue(result.r.EmployeeId, out var dn) ? dn : null,
+            leaveTypeId = result.r.LeaveTypeId,
+            leaveTypeName = result.LeaveTypeName,
+            leaveTypeColor = result.LeaveTypeColor,
+            startDate = result.r.StartDate,
+            endDate = result.r.EndDate,
+            days = result.r.TotalDays,
+            reason = result.r.Reason,
+            attachments = ParseAttachmentUrls(result.r.Attachments),
+            status = result.r.Status.ToString(),
+            approverId = approval?.ApproverId,
+            approverName = approval != null ? "系统" : null,
+            approvedAt = approval?.ApprovedAt,
+            approverComment = approval?.Comments,
+            createdAt = result.r.CreatedAt
+        });
     }
     
     /// <summary>
@@ -92,8 +178,13 @@ public class LeaveController(IMediator mediator) : ControllerBase
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
-        // TODO: 实现获取我的请假列表查询
-        return Ok(new { message = "获取我的请假列表功能待实现" });
+        var employeeId = currentUserAccessor.CurrentUser?.EmployeeId;
+        if (!employeeId.HasValue)
+        {
+            return Ok(new { items = Array.Empty<object>(), total = 0, page = pageNumber, pageSize, totalPages = 0 });
+        }
+
+        return await GetLeaveRequests(pageNumber, pageSize, status: null, employeeId: employeeId.Value, cancellationToken: cancellationToken);
     }
     
     /// <summary>
@@ -103,11 +194,47 @@ public class LeaveController(IMediator mediator) : ControllerBase
     [RequirePermission(Permissions.LeaveApprove)]
     public async Task<IActionResult> ApproveLeaveRequest(
         Guid id,
-        [FromBody] ApproveLeaveRequest request,
+        [FromBody] LeaveApprovalDecision request,
         CancellationToken cancellationToken)
     {
-        // TODO: 实现审批请假命令
-        return Ok(new { message = "审批请假功能待实现" });
+        var approverId = currentUserAccessor.CurrentUser?.Id ?? Guid.Empty;
+        var leaveRequest = await context.LeaveRequests.FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+        if (leaveRequest == null) return NotFound();
+
+        if (leaveRequest.Status != LeaveRequestStatus.Pending) return Ok();
+
+        var year = leaveRequest.StartDate.Year;
+        var balance = await context.LeaveBalances
+            .FirstOrDefaultAsync(b => b.EmployeeId == leaveRequest.EmployeeId && b.LeaveTypeId == leaveRequest.LeaveTypeId && b.Year == year, cancellationToken);
+
+        if (request.approved)
+        {
+            leaveRequest.Approve(approverId, request.comment);
+            var approval = leaveRequest.Approvals.LastOrDefault();
+            if (approval != null)
+            {
+                context.Entry(approval).State = EntityState.Added;
+            }
+            if (balance != null)
+            {
+                balance.Use(leaveRequest.TotalDays);
+            }
+            await context.SaveChangesAsync(cancellationToken);
+            return Ok(new { message = "approved" });
+        }
+
+        leaveRequest.Reject(approverId, request.comment ?? "rejected");
+        var rejectedApproval = leaveRequest.Approvals.LastOrDefault();
+        if (rejectedApproval != null)
+        {
+            context.Entry(rejectedApproval).State = EntityState.Added;
+        }
+        if (balance != null)
+        {
+            balance.RemovePending(leaveRequest.TotalDays);
+        }
+        await context.SaveChangesAsync(cancellationToken);
+        return Ok(new { message = "rejected" });
     }
     
     /// <summary>
@@ -120,8 +247,7 @@ public class LeaveController(IMediator mediator) : ControllerBase
         [FromBody] RejectLeaveRequest request,
         CancellationToken cancellationToken)
     {
-        // TODO: 实现拒绝请假命令
-        return Ok(new { message = "拒绝请假功能待实现" });
+        return await ApproveLeaveRequest(id, new LeaveApprovalDecision(false, request.Reason), cancellationToken);
     }
     
     /// <summary>
@@ -133,8 +259,31 @@ public class LeaveController(IMediator mediator) : ControllerBase
         [FromBody] CancelLeaveRequest request,
         CancellationToken cancellationToken)
     {
-        // TODO: 实现取消请假命令
-        return Ok(new { message = "取消请假功能待实现" });
+        var employeeId = currentUserAccessor.CurrentUser?.EmployeeId;
+        if (!employeeId.HasValue) return Unauthorized();
+
+        var leaveRequest = await context.LeaveRequests.FirstOrDefaultAsync(r => r.Id == id && r.EmployeeId == employeeId.Value, cancellationToken);
+        if (leaveRequest == null) return NotFound();
+
+        if (leaveRequest.Status != LeaveRequestStatus.Pending)
+        {
+            leaveRequest.Cancel(request.Reason);
+            await context.SaveChangesAsync(cancellationToken);
+            return Ok();
+        }
+
+        var year = leaveRequest.StartDate.Year;
+        var balance = await context.LeaveBalances
+            .FirstOrDefaultAsync(b => b.EmployeeId == leaveRequest.EmployeeId && b.LeaveTypeId == leaveRequest.LeaveTypeId && b.Year == year, cancellationToken);
+
+        leaveRequest.Cancel(request.Reason);
+        if (balance != null)
+        {
+            balance.RemovePending(leaveRequest.TotalDays);
+        }
+
+        await context.SaveChangesAsync(cancellationToken);
+        return Ok();
     }
     
     /// <summary>
@@ -147,8 +296,9 @@ public class LeaveController(IMediator mediator) : ControllerBase
         [FromQuery] int? year,
         CancellationToken cancellationToken)
     {
-        // TODO: 实现获取员工假期余额查询
-        return Ok(new { message = "获取员工假期余额功能待实现" });
+        var y = year ?? DateTime.Today.Year;
+        var balances = await GetLeaveBalancesAsync(employeeId, y, cancellationToken);
+        return Ok(balances);
     }
     
     /// <summary>
@@ -159,8 +309,11 @@ public class LeaveController(IMediator mediator) : ControllerBase
         [FromQuery] int? year,
         CancellationToken cancellationToken)
     {
-        // TODO: 实现获取假期余额查询
-        return Ok(new { message = "获取假期余额功能待实现" });
+        var employeeId = currentUserAccessor.CurrentUser?.EmployeeId;
+        if (!employeeId.HasValue) return Ok(Array.Empty<object>());
+        var y = year ?? DateTime.Today.Year;
+        var balances = await GetLeaveBalancesAsync(employeeId.Value, y, cancellationToken);
+        return Ok(balances);
     }
     
     /// <summary>
@@ -169,11 +322,96 @@ public class LeaveController(IMediator mediator) : ControllerBase
     [HttpGet("types")]
     public async Task<IActionResult> GetLeaveTypes(CancellationToken cancellationToken)
     {
-        // TODO: 实现获取假期类型查询
-        return Ok(new { message = "获取假期类型功能待实现" });
+        var types = await context.LeaveTypes
+            .Where(t => t.IsActive)
+            .ToListAsync(cancellationToken);
+
+        var policies = await context.LeavePolicies
+            .Where(p => p.IsActive)
+            .ToListAsync(cancellationToken);
+
+        var policyByType = policies
+            .GroupBy(p => p.LeaveTypeId)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.BaseQuota).First());
+
+        var items = types.Select(t =>
+        {
+            policyByType.TryGetValue(t.Id, out var policy);
+            return new
+            {
+                id = t.Id,
+                code = t.Code,
+                name = t.Name,
+                description = t.Description,
+                isPaid = t.IsPaid,
+                defaultDays = policy?.BaseQuota ?? 0m,
+                maxCarryOver = policy?.MaxCarryOverDays ?? 0m,
+                carryOverExpiry = policy?.CarryOverExpiryMonths,
+                requiresApproval = t.RequiresApproval,
+                allowHalfDay = t.AllowHalfDay,
+                color = t.Color ?? "#999999",
+                isActive = t.IsActive
+            };
+        }).ToList();
+
+        return Ok(items);
+    }
+
+    private async Task<Dictionary<Guid, string>> GetDepartmentNamesAsync(List<Guid> employeeIds, CancellationToken cancellationToken)
+    {
+        var jobs =
+            from j in context.JobHistories
+            where employeeIds.Contains(j.EmployeeId) && j.EffectiveEndDate == new DateOnly(9999, 12, 31) && j.CorrectionStatus == null
+            join d in context.OrganizationUnits on j.DepartmentId equals d.Id
+            select new { j.EmployeeId, DepartmentName = d.Name };
+
+        return await jobs.ToDictionaryAsync(x => x.EmployeeId, x => x.DepartmentName, cancellationToken);
+    }
+
+    private async Task<List<object>> GetLeaveBalancesAsync(Guid employeeId, int year, CancellationToken cancellationToken)
+    {
+        var balances = await context.LeaveBalances
+            .Where(b => b.EmployeeId == employeeId && b.Year == year)
+            .ToListAsync(cancellationToken);
+
+        var types = await context.LeaveTypes.ToDictionaryAsync(t => t.Id, t => t, cancellationToken);
+
+        return balances.Select(b =>
+        {
+            types.TryGetValue(b.LeaveTypeId, out var t);
+            var totalDays = b.Entitlement + b.CarriedOver;
+            return new
+            {
+                id = b.Id,
+                employeeId = b.EmployeeId,
+                leaveTypeId = b.LeaveTypeId,
+                leaveTypeName = t?.Name ?? string.Empty,
+                leaveTypeColor = t?.Color,
+                year = b.Year,
+                totalDays,
+                usedDays = b.Used,
+                pendingDays = b.Pending,
+                remainingDays = b.Available,
+                carryOverDays = b.CarriedOver
+            };
+        }).Cast<object>().ToList();
+    }
+
+    private static List<string> ParseAttachmentUrls(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return [];
+        try
+        {
+            var parsed = System.Text.Json.JsonSerializer.Deserialize<List<string>>(json);
+            return parsed ?? [];
+        }
+        catch
+        {
+            return [];
+        }
     }
 }
 
-public record ApproveLeaveRequest(string? Comments);
+public record LeaveApprovalDecision(bool approved, string? comment);
 public record RejectLeaveRequest(string Reason);
 public record CancelLeaveRequest(string Reason);

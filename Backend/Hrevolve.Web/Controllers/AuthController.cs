@@ -5,7 +5,7 @@ namespace Hrevolve.Web.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController(IMediator mediator) : ControllerBase
+public class AuthController(IMediator mediator, Hrevolve.Infrastructure.Persistence.HrevolveDbContext context) : ControllerBase
 {
     
     /// <summary>
@@ -27,8 +27,17 @@ public class AuthController(IMediator mediator) : ControllerBase
         {
             return BadRequest(new { code = result.ErrorCode, message = result.Error });
         }
-        
-        return Ok(result.Value);
+
+        var expiresIn = (int)Math.Max(0, (result.Value.ExpiresAt - DateTime.UtcNow).TotalSeconds);
+        return Ok(new
+        {
+            accessToken = result.Value.AccessToken,
+            refreshToken = result.Value.RefreshToken,
+            expiresIn,
+            userId = result.Value.UserId,
+            userName = result.Value.UserName,
+            requiresMfa = result.Value.RequiresMfa
+        });
     }
     
     /// <summary>
@@ -58,23 +67,40 @@ public class AuthController(IMediator mediator) : ControllerBase
     /// </summary>
     [HttpGet("me")]
     [Authorize]
-    public IActionResult GetCurrentUser()
+    public async Task<IActionResult> GetCurrentUser(CancellationToken cancellationToken)
     {
-        var userId = User.FindFirst("sub")?.Value;
-        var tenantId = User.FindFirst("tenant_id")?.Value;
-        var username = User.FindFirst("username")?.Value;
-        var email = User.FindFirst("email")?.Value;
-        var employeeId = User.FindFirst("employee_id")?.Value;
-        var permissions = User.FindAll("permission").Select(c => c.Value).ToList();
-        
+        var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+        if (string.IsNullOrWhiteSpace(userIdRaw) || !Guid.TryParse(userIdRaw, out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var user = await context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+        if (user == null) return Unauthorized();
+
+        var permissions = User.FindAll("permission").Select(c => c.Value).Distinct().ToList();
+        var roles = await (
+            from ur in context.UserRoles.IgnoreQueryFilters()
+            where ur.UserId == userId
+            join r in context.Roles.IgnoreQueryFilters() on ur.RoleId equals r.Id
+            select r.Name
+        ).ToListAsync(cancellationToken);
+
+        if (permissions.Contains(Permissions.SystemAdmin))
+        {
+            roles = roles.Contains("Admin") ? roles : ["Admin", ..roles];
+        }
+
         return Ok(new
         {
-            userId,
-            tenantId,
-            username,
-            email,
-            employeeId,
-            permissions
+            id = user.Id,
+            username = user.Username,
+            email = user.Email,
+            displayName = user.Username,
+            roles,
+            permissions,
+            tenantId = user.TenantId,
+            employeeId = user.EmployeeId
         });
     }
 }
