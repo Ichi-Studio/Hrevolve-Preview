@@ -1,3 +1,9 @@
+using System.Security.Claims;
+using Hrevolve.Domain.Attendance;
+using Hrevolve.Domain.Employees;
+using Hrevolve.Domain.Organizations;
+using Hrevolve.Web.Filters;
+
 namespace Hrevolve.Web.Controllers;
 
 /// <summary>
@@ -335,6 +341,157 @@ public class SettingsController(Hrevolve.Infrastructure.Persistence.HrevolveDbCo
         user.SetPassword(newPassword);
         await context.SaveChangesAsync(cancellationToken);
         return Ok(new { message = "密码已重置" });
+    }
+
+    [HttpPost("users/me/create-ceo-employee-and-bind")]
+    [RequirePermission(Permissions.EmployeeWrite)]
+    public async Task<IActionResult> CreateCeoEmployeeAndBind(CancellationToken cancellationToken = default)
+    {
+        var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+        if (string.IsNullOrWhiteSpace(userIdRaw) || !Guid.TryParse(userIdRaw, out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+        if (user == null) return Unauthorized();
+
+        var tenantId = user.TenantId != Guid.Empty ? user.TenantId : context.CurrentTenantId;
+        if (tenantId == Guid.Empty) return BadRequest(new { message = "无法识别租户信息" });
+
+        var company = await context.OrganizationUnits
+            .OrderBy(x => x.Level)
+            .FirstOrDefaultAsync(x => x.Code == "COMP" || x.Type == OrganizationUnitType.Company, cancellationToken);
+        if (company == null) return BadRequest(new { message = "未找到公司组织（COMP）" });
+
+        var ceoPosition = await context.Positions
+            .FirstOrDefaultAsync(p => p.Code == "CEO", cancellationToken);
+        if (ceoPosition == null) return BadRequest(new { message = "未找到 CEO 职位（Code=CEO）" });
+
+        var employeeNumber = await GenerateUniqueEmployeeNumberAsync("CEO", cancellationToken);
+        var hireDate = DateOnly.FromDateTime(DateTime.Today).AddYears(-3);
+
+        var employee = Employee.Create(
+            tenantId,
+            employeeNumber,
+            "天成",
+            "赵",
+            Gender.Male,
+            new DateOnly(1986, 5, 12),
+            hireDate,
+            EmploymentType.FullTime);
+
+        employee.SetContactInfo($"{employeeNumber.ToLowerInvariant()}@hrevolve.com", "13800009999", null, "上海市黄浦区演示路CEO号");
+        employee.LinkUser(user.Id);
+
+        var job = JobHistory.Create(
+            tenantId,
+            employee.Id,
+            ceoPosition.Id,
+            company.Id,
+            100000m,
+            hireDate,
+            JobChangeType.NewHire,
+            "创建CEO演示员工并绑定账号");
+
+        await context.Employees.AddAsync(employee, cancellationToken);
+        await context.JobHistories.AddAsync(job, cancellationToken);
+
+        user.LinkEmployee(employee.Id);
+
+        await EnsureRecentAttendanceAsync(tenantId, employee.Id, cancellationToken);
+
+        await context.SaveChangesAsync(cancellationToken);
+
+        return Ok(new
+        {
+            employeeId = employee.Id,
+            employeeNo = employee.EmployeeNumber,
+            employeeName = employee.LastName + employee.FirstName,
+            boundUser = user.Username
+        });
+    }
+
+    private async Task<string> GenerateUniqueEmployeeNumberAsync(string prefix, CancellationToken cancellationToken)
+    {
+        prefix = string.IsNullOrWhiteSpace(prefix) ? "EMP" : prefix.Trim().ToUpperInvariant();
+        var seq = 1;
+        while (true)
+        {
+            var candidate = $"{prefix}{seq:0000}";
+            var exists = await context.Employees.AnyAsync(e => e.EmployeeNumber == candidate, cancellationToken);
+            if (!exists) return candidate;
+            seq++;
+            if (seq > 9999) throw new InvalidOperationException("无法生成唯一员工工号");
+        }
+    }
+
+    private async Task EnsureRecentAttendanceAsync(Guid tenantId, Guid employeeId, CancellationToken cancellationToken)
+    {
+        var shift = await context.Shifts.FirstOrDefaultAsync(s => s.Code == "DAY", cancellationToken)
+                    ?? await context.Shifts.OrderBy(s => s.Code).FirstOrDefaultAsync(cancellationToken);
+        if (shift == null) return;
+
+        var start = DateOnly.FromDateTime(DateTime.Today).AddDays(-14);
+        var end = DateOnly.FromDateTime(DateTime.Today);
+
+        var existingDates = await context.Schedules
+            .Where(s => s.EmployeeId == employeeId && s.ScheduleDate >= start && s.ScheduleDate <= end)
+            .Select(s => s.ScheduleDate)
+            .ToListAsync(cancellationToken);
+        var existingSet = existingDates.ToHashSet();
+
+        var schedulesToAdd = new List<Schedule>();
+        for (var d = start; d <= end; d = d.AddDays(1))
+        {
+            if (existingSet.Contains(d)) continue;
+            var isWeekend = d.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
+            schedulesToAdd.Add(Schedule.Create(tenantId, employeeId, shift.Id, d, isWeekend));
+        }
+
+        if (schedulesToAdd.Count > 0)
+        {
+            await context.Schedules.AddRangeAsync(schedulesToAdd, cancellationToken);
+            await context.SaveChangesAsync(cancellationToken);
+        }
+
+        var schedules = await context.Schedules
+            .Where(s => s.EmployeeId == employeeId && s.ScheduleDate >= start && s.ScheduleDate <= end && !s.IsRestDay)
+            .ToListAsync(cancellationToken);
+
+        var existingRecordDates = await context.AttendanceRecords
+            .Where(r => r.EmployeeId == employeeId && r.AttendanceDate >= start && r.AttendanceDate <= end)
+            .Select(r => r.AttendanceDate)
+            .ToListAsync(cancellationToken);
+        var recordSet = existingRecordDates.ToHashSet();
+
+        var random = new Random();
+        var recordsToAdd = new List<AttendanceRecord>();
+
+        foreach (var s in schedules)
+        {
+            if (recordSet.Contains(s.ScheduleDate)) continue;
+
+            var record = AttendanceRecord.Create(tenantId, employeeId, s.ScheduleDate, s.Id);
+
+            var localDate = DateTime.SpecifyKind(s.ScheduleDate.ToDateTime(TimeOnly.MinValue), DateTimeKind.Local);
+            var workStart = localDate.AddHours(shift.StartTime.Hour).AddMinutes(shift.StartTime.Minute);
+            var workEnd = localDate.AddHours(shift.EndTime.Hour).AddMinutes(shift.EndTime.Minute);
+            if (shift.CrossDay) workEnd = workEnd.AddDays(1);
+
+            var checkIn = workStart.AddMinutes(random.Next(-5, 21));
+            var checkOut = workEnd.AddMinutes(random.Next(-15, 61));
+
+            record.CheckIn(checkIn.ToUniversalTime(), CheckInMethod.Web, "31.2304,121.4737");
+            record.CheckOut(checkOut.ToUniversalTime(), CheckInMethod.Web, "31.2304,121.4737");
+
+            recordsToAdd.Add(record);
+        }
+
+        if (recordsToAdd.Count > 0)
+        {
+            await context.AttendanceRecords.AddRangeAsync(recordsToAdd, cancellationToken);
+        }
     }
 
     /// <summary>
