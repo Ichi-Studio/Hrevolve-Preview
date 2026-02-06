@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { Search, Plus } from '@element-plus/icons-vue';
 import { employeeApi } from '@/api';
 import type { Employee, JobHistory } from '@/types';
 import dayjs from 'dayjs';
 
-const router = useRouter();
 const { t } = useI18n();
 
 const employees = ref<Employee[]>([]);
