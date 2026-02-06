@@ -44,6 +44,28 @@ public class Role : AuditableEntity
             _permissions.Remove(permission);
         }
     }
+
+    public void UpdateDetails(string name, string? description)
+    {
+        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("name不能为空", nameof(name));
+        Name = name.Trim();
+        Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+    }
+
+    public void ReplacePermissions(IEnumerable<string> permissionCodes)
+    {
+        var target = permissionCodes
+            .Where(p => !string.IsNullOrWhiteSpace(p))
+            .Select(p => p.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        _permissions.RemoveAll(p => !target.Contains(p.PermissionCode));
+        foreach (var code in target)
+        {
+            AddPermission(code);
+        }
+    }
 }
 
 /// <summary>

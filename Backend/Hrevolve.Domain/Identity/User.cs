@@ -133,6 +133,43 @@ public class User : AuditableEntity
             _userRoles.Add(new UserRole(Id, roleId));
         }
     }
+
+    public void RemoveRole(Guid roleId)
+    {
+        _userRoles.RemoveAll(ur => ur.RoleId == roleId);
+    }
+
+    public void ReplaceRoles(IEnumerable<Guid> roleIds)
+    {
+        var target = roleIds.Where(id => id != Guid.Empty).Distinct().ToHashSet();
+        _userRoles.RemoveAll(ur => !target.Contains(ur.RoleId));
+        foreach (var roleId in target)
+        {
+            AddRole(roleId);
+        }
+    }
+
+    public void SetUsername(string username)
+    {
+        if (string.IsNullOrWhiteSpace(username)) throw new ArgumentException("username不能为空", nameof(username));
+        Username = username.Trim();
+    }
+
+    public void SetEmail(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email)) throw new ArgumentException("email不能为空", nameof(email));
+        Email = email.Trim().ToLowerInvariant();
+    }
+
+    public void SetPhone(string? phone)
+    {
+        Phone = string.IsNullOrWhiteSpace(phone) ? null : phone.Trim();
+    }
+
+    public void SetStatus(UserStatus status)
+    {
+        Status = status;
+    }
     
     public void AddTrustedDevice(string deviceId, string deviceName, string userAgent)
     {
