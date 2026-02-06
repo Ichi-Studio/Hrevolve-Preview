@@ -24,7 +24,7 @@ public class AgentController(
         
         if (currentUser?.EmployeeId == null)
         {
-            return BadRequest(new { code = "NO_EMPLOYEE", message = "当前用户未关联员工信息" });
+            return StatusCode(StatusCodes.Status403Forbidden, new { code = "NO_EMPLOYEE", message = "当前用户未关联员工信息" });
         }
         
         var employeeId = currentUser.EmployeeId.Value;
@@ -33,11 +33,7 @@ public class AgentController(
         
         var response = await agentService.ChatAsync(employeeId, request.Message, cancellationToken);
         
-        return Ok(new ChatResponse
-        {
-            Message = response,
-            Timestamp = DateTime.UtcNow
-        });
+        return Ok(new { reply = response });
     }
     
     /// <summary>
@@ -50,12 +46,12 @@ public class AgentController(
         
         if (currentUser?.EmployeeId == null)
         {
-            return BadRequest(new { code = "NO_EMPLOYEE", message = "当前用户未关联员工信息" });
+            return StatusCode(StatusCodes.Status403Forbidden, new { code = "NO_EMPLOYEE", message = "当前用户未关联员工信息" });
         }
         
         var history = await agentService.GetChatHistoryAsync(currentUser.EmployeeId.Value, limit);
         
-        return Ok(new { messages = history });
+        return Ok(history);
     }
     
     /// <summary>
@@ -68,7 +64,7 @@ public class AgentController(
         
         if (currentUser?.EmployeeId == null)
         {
-            return BadRequest(new { code = "NO_EMPLOYEE", message = "当前用户未关联员工信息" });
+            return StatusCode(StatusCodes.Status403Forbidden, new { code = "NO_EMPLOYEE", message = "当前用户未关联员工信息" });
         }
         
         await agentService.ClearChatHistoryAsync(currentUser.EmployeeId.Value);
@@ -78,9 +74,3 @@ public class AgentController(
 }
 
 public record ChatRequest(string Message);
-
-public record ChatResponse
-{
-    public string Message { get; init; } = null!;
-    public DateTime Timestamp { get; init; }
-}

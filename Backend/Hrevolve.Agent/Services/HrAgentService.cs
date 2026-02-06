@@ -29,7 +29,7 @@ public class HrAgentService(IChatClient chatClient,IHrToolProvider toolProvider,
 {
 
     // 对话历史存储（生产环境应使用Redis或数据库）
-    private static readonly Dictionary<Guid, List<ChatMessage>> _chatHistories = [];
+    private static readonly Dictionary<Guid, List<AgentChatHistoryMessage>> _chatHistories = [];
     private static readonly Lock _lock = new();
     private const int DefaultChatHistoryLimit = 20;
     
@@ -41,7 +41,7 @@ public class HrAgentService(IChatClient chatClient,IHrToolProvider toolProvider,
         var chatHistory = GetOrCreateChatHistory(employeeId);
         
         // 添加用户消息
-        chatHistory.Add(new ChatMessage(ChatRole.User, message));
+        chatHistory.Add(new AgentChatHistoryMessage(ChatRole.User, message, DateTime.UtcNow));
         
         try
         {
@@ -52,12 +52,12 @@ public class HrAgentService(IChatClient chatClient,IHrToolProvider toolProvider,
             };
             
             // 调用AI模型
-            var response = await chatClient.GetResponseAsync(chatHistory.AsEnumerable(), options, cancellationToken);
+            var response = await chatClient.GetResponseAsync(chatHistory.Select(m => m.ToChatMessage()), options, cancellationToken);
             
             var assistantMessage = response.Text ?? "抱歉，我无法处理您的请求。";
             
             // 添加助手回复到历史
-            chatHistory.Add(new ChatMessage(ChatRole.Assistant, assistantMessage));
+            chatHistory.Add(new AgentChatHistoryMessage(ChatRole.Assistant, assistantMessage, DateTime.UtcNow));
             
             // 限制历史长度
             TrimChatHistory(chatHistory, maxMessages: DefaultChatHistoryLimit);
@@ -80,7 +80,7 @@ public class HrAgentService(IChatClient chatClient,IHrToolProvider toolProvider,
                 var messages = history
                     .Skip(1) // 跳过系统消息
                     .TakeLast(limit)
-                    .Select(m => new AgentChatMessage(m.Role.Value, m.Text ?? ""))
+                    .Select(m => new AgentChatMessage(m.Role.Value, m.Content, m.TimestampUtc.ToString("o")))
                     .ToList();
 
                 return Task.FromResult<IReadOnlyList<AgentChatMessage>>(messages);
@@ -99,13 +99,13 @@ public class HrAgentService(IChatClient chatClient,IHrToolProvider toolProvider,
         return Task.CompletedTask;
     }
     
-    private static List<ChatMessage> GetOrCreateChatHistory(Guid employeeId)
+    private static List<AgentChatHistoryMessage> GetOrCreateChatHistory(Guid employeeId)
     {
         lock (_lock)
         {
             if (!_chatHistories.TryGetValue(employeeId, out var history))
             {
-                history = [new ChatMessage(ChatRole.System, GetSystemPrompt)];
+                history = [new AgentChatHistoryMessage(ChatRole.System, GetSystemPrompt, DateTime.UtcNow)];
                 _chatHistories[employeeId] = history;
             }
             return history;
@@ -132,7 +132,7 @@ public class HrAgentService(IChatClient chatClient,IHrToolProvider toolProvider,
             """;
     
     
-    private static void TrimChatHistory(List<ChatMessage> history, int maxMessages)
+    private static void TrimChatHistory(List<AgentChatHistoryMessage> history, int maxMessages)
     {
         // 保留系统消息和最近的消息
         while (history.Count > maxMessages + 1)
@@ -142,7 +142,12 @@ public class HrAgentService(IChatClient chatClient,IHrToolProvider toolProvider,
     }
 }
 
+internal record AgentChatHistoryMessage(ChatRole Role, string Content, DateTime TimestampUtc)
+{
+    public ChatMessage ToChatMessage() => new(Role, Content);
+}
+
 /// <summary>
 /// Agent聊天消息DTO
 /// </summary>
-public record AgentChatMessage(string Role, string Content);
+public record AgentChatMessage(string Role, string Content, string Timestamp);

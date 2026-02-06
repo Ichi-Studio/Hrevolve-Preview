@@ -1,3 +1,11 @@
+using System.Security.Claims;
+using System.Text.Json;
+using Hrevolve.Agent.Configuration;
+using Hrevolve.Agent.Models.Text2Sql;
+using Hrevolve.Agent.Services.Text2Sql;
+using Hrevolve.Shared.Identity;
+using Microsoft.Extensions.Options;
+
 namespace Hrevolve.Agent.Services;
 
 /// <summary>
@@ -14,13 +22,32 @@ public interface IHrToolProvider
 /// <summary>
 /// HR工具提供者实现 - 提供AI Agent可调用的工具函数
 /// </summary>
-public class HrToolProvider(IServiceProvider serviceProvider) : IHrToolProvider
+public class HrToolProvider : IHrToolProvider
 {
+    private readonly IServiceProvider _serviceProvider;
+    private readonly IText2SqlService _text2SqlService;
+    private readonly IQueryExecutor _queryExecutor;
+    private readonly ICurrentUserAccessor _currentUserAccessor;
+    private readonly Text2SqlOptions _options;
+
+    public HrToolProvider(
+        IServiceProvider serviceProvider,
+        IText2SqlService text2SqlService,
+        IQueryExecutor queryExecutor,
+        ICurrentUserAccessor currentUserAccessor,
+        IOptions<Text2SqlOptions> options)
+    {
+        _serviceProvider = serviceProvider;
+        _text2SqlService = text2SqlService;
+        _queryExecutor = queryExecutor;
+        _currentUserAccessor = currentUserAccessor;
+        _options = options.Value;
+    }
     
     public IList<AITool> GetTools()
     {
-        return
-        [
+        var tools = new List<AITool>
+        {
             AIFunctionFactory.Create(GetLeaveBalance, "get_leave_balance", "查询员工的假期余额信息"),
             AIFunctionFactory.Create(SubmitLeaveRequest, "submit_leave_request", "帮助员工提交请假申请"),
             AIFunctionFactory.Create(GetSalaryInfo, "get_salary_info", "查询员工的薪资信息"),
@@ -28,7 +55,187 @@ public class HrToolProvider(IServiceProvider serviceProvider) : IHrToolProvider
             AIFunctionFactory.Create(QueryHrPolicy, "query_hr_policy", "查询公司HR政策和规章制度"),
             AIFunctionFactory.Create(GetOrganizationInfo, "get_organization_info", "查询公司组织架构信息"),
             AIFunctionFactory.Create(GetTodayAttendance, "get_today_attendance", "获取今日考勤状态")
-        ];
+        };
+
+        // 如果启用了 Text2SQL 功能，添加自然语言查询工具
+        if (_options.Enabled)
+        {
+            tools.Add(AIFunctionFactory.Create(QueryHrDataAsync, "query_hr_data", 
+                "使用自然语言查询HR系统数据，支持员工、考勤、请假、薪资、部门等信息的灵活查询和统计"));
+        }
+
+        return tools;
+    }
+
+    /// <summary>
+    /// 使用自然语言查询HR数据
+    /// </summary>
+    [Description("使用自然语言查询HR系统数据，支持灵活的条件查询和统计分析。例如：'查询张三的考勤记录'、'显示销售部门的所有员工'、'统计本月请假人数'")]
+    private async Task<string> QueryHrDataAsync(
+        [Description("自然语言查询，描述您想要查询的数据")] string query,
+        [Description("最大返回行数，默认100，最大1000")] int maxResults = 100)
+    {
+        try
+        {
+            // 1. 将自然语言转换为结构化查询
+            var conversionResult = await _text2SqlService.ConvertAsync(query);
+            if (!conversionResult.Success || conversionResult.QueryRequest == null)
+            {
+                return $"无法理解您的查询：{conversionResult.ErrorMessage ?? "请尝试更具体的描述"}";
+            }
+
+            var queryRequest = conversionResult.QueryRequest;
+            queryRequest.Limit = Math.Min(maxResults, _options.MaxResultRows);
+
+            // 2. 获取当前用户（用于权限验证）
+            var currentUser = _currentUserAccessor.CurrentUser;
+            var claimsPrincipal = CreateClaimsPrincipal(currentUser);
+
+            // 3. 执行查询
+            var result = await _queryExecutor.ExecuteAsync(queryRequest, claimsPrincipal);
+            if (!result.Success)
+            {
+                return $"查询执行失败：{result.ErrorMessage}";
+            }
+
+            // 4. 格式化结果
+            return FormatQueryResult(result, queryRequest);
+        }
+        catch (Exception ex)
+        {
+            return $"查询过程中发生错误：{ex.Message}";
+        }
+    }
+
+    private static ClaimsPrincipal CreateClaimsPrincipal(ICurrentUser? currentUser)
+    {
+        if (currentUser == null)
+        {
+            return new ClaimsPrincipal(new ClaimsIdentity());
+        }
+
+        var claims = new List<Claim>();
+        
+        if (currentUser.Id.HasValue)
+        {
+            claims.Add(new Claim("user_id", currentUser.Id.Value.ToString()));
+        }
+        if (currentUser.EmployeeId.HasValue)
+        {
+            claims.Add(new Claim("employee_id", currentUser.EmployeeId.Value.ToString()));
+        }
+        if (currentUser.TenantId.HasValue)
+        {
+            claims.Add(new Claim("tenant_id", currentUser.TenantId.Value.ToString()));
+        }
+        
+        foreach (var role in currentUser.Roles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+        }
+        
+        foreach (var permission in currentUser.Permissions)
+        {
+            claims.Add(new Claim("permission", permission));
+        }
+
+        var identity = new ClaimsIdentity(claims, "Bearer");
+        return new ClaimsPrincipal(identity);
+    }
+
+    private static string FormatQueryResult(QueryResult result, QueryRequest request)
+    {
+        var sb = new System.Text.StringBuilder();
+
+        // 聚合查询结果
+        if (result.AggregationResult != null)
+        {
+            var aggregationName = request.Aggregation switch
+            {
+                AggregationType.Count => "数量",
+                AggregationType.CountDistinct => "去重数量",
+                AggregationType.Sum => "总和",
+                AggregationType.Avg => "平均值",
+                AggregationType.Min => "最小值",
+                AggregationType.Max => "最大值",
+                _ => "结果"
+            };
+            sb.AppendLine($"查询结果 - {aggregationName}: {result.AggregationResult}");
+            return sb.ToString();
+        }
+
+        // 修改操作结果
+        if (result.Operation != QueryOperation.Select)
+        {
+            var operationName = result.Operation switch
+            {
+                QueryOperation.Insert => "新增",
+                QueryOperation.Update => "更新",
+                QueryOperation.Delete => "删除",
+                _ => "操作"
+            };
+            sb.AppendLine($"{operationName}成功，影响 {result.AffectedRows} 条记录");
+            if (result.InsertedId.HasValue)
+            {
+                sb.AppendLine($"新记录ID: {result.InsertedId}");
+            }
+            return sb.ToString();
+        }
+
+        // SELECT 查询结果
+        if (result.Data.Count == 0)
+        {
+            sb.AppendLine("未找到符合条件的数据");
+            return sb.ToString();
+        }
+
+        sb.AppendLine($"查询结果（共 {result.RowCount} 条记录）：");
+        sb.AppendLine();
+
+        // 显示列标题
+        if (result.Columns.Count > 0)
+        {
+            var headers = result.Columns.Select(c => c.DisplayName ?? c.Name);
+            sb.AppendLine(string.Join(" | ", headers));
+            sb.AppendLine(new string('-', Math.Min(80, headers.Sum(h => h.Length + 3))));
+        }
+
+        // 显示数据行（最多显示 20 行）
+        var displayCount = Math.Min(result.Data.Count, 20);
+        for (var i = 0; i < displayCount; i++)
+        {
+            var row = result.Data[i];
+            var values = result.Columns.Count > 0
+                ? result.Columns.Select(c => FormatValue(row.GetValueOrDefault(c.Name)))
+                : row.Values.Select(FormatValue);
+            sb.AppendLine(string.Join(" | ", values));
+        }
+
+        if (result.Data.Count > displayCount)
+        {
+            sb.AppendLine($"... 还有 {result.Data.Count - displayCount} 条记录未显示");
+        }
+
+        sb.AppendLine();
+        sb.AppendLine($"查询耗时: {result.ExecutionTimeMs}ms");
+
+        return sb.ToString();
+    }
+
+    private static string FormatValue(object? value)
+    {
+        return value switch
+        {
+            null => "-",
+            DateTime dt => dt.ToString("yyyy-MM-dd HH:mm"),
+            DateOnly date => date.ToString("yyyy-MM-dd"),
+            TimeOnly time => time.ToString("HH:mm"),
+            decimal d => d.ToString("N2"),
+            double d => d.ToString("N2"),
+            bool b => b ? "是" : "否",
+            Enum e => e.ToString(),
+            _ => value.ToString() ?? "-"
+        };
     }
     
     /// <summary>
