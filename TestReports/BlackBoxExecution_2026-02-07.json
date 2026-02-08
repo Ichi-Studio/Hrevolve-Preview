@@ -1,0 +1,678 @@
+{
+  "summary": {
+    "runDateUtc": "2026-02-07",
+    "baseUrl": "https://localhost:5225",
+    "tenant": "demo",
+    "total": 64,
+    "passed": 61,
+    "failed": 3
+  },
+  "cases": [
+    {
+      "id": "TC-ENV-001",
+      "name": "独立测试环境可运行",
+      "startedAtUtc": "2026-02-07T14:22:51.0321825Z",
+      "durationMs": 433,
+      "expected": "200 + Healthy",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-AUTH-001",
+      "name": "正确账号密码登录（员工）",
+      "startedAtUtc": "2026-02-07T14:22:51.5144070Z",
+      "durationMs": 335,
+      "expected": "200 + accessToken/refreshToken",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-AUTH-002",
+      "name": "错误凭据登录",
+      "startedAtUtc": "2026-02-07T14:22:51.8914346Z",
+      "durationMs": 144,
+      "expected": "400",
+      "actual": "status=400",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-AUTH-004",
+      "name": "Refresh Token 轮换",
+      "startedAtUtc": "2026-02-07T14:22:52.5818826Z",
+      "durationMs": 250,
+      "expected": "200 + new accessToken/refreshToken",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-AUTH-003",
+      "name": "获取当前用户信息",
+      "startedAtUtc": "2026-02-07T14:22:52.9719499Z",
+      "durationMs": 142,
+      "expected": "200 + tenantId/roles/permissions",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-SEC-001",
+      "name": "未登录访问受保护资源",
+      "startedAtUtc": "2026-02-07T14:22:53.1187527Z",
+      "durationMs": 183,
+      "expected": "401",
+      "actual": "status=401",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-SEC-002",
+      "name": "越权访问（员工访问员工列表）",
+      "startedAtUtc": "2026-02-07T14:22:53.3034567Z",
+      "durationMs": 105,
+      "expected": "403",
+      "actual": "status=403",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-I18N-001",
+      "name": "获取 locales",
+      "startedAtUtc": "2026-02-07T14:22:53.4107108Z",
+      "durationMs": 85,
+      "expected": "200 + locales",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-I18N-002",
+      "name": "获取 zh-CN 消息包",
+      "startedAtUtc": "2026-02-07T14:22:53.4985706Z",
+      "durationMs": 96,
+      "expected": "200 + key/value",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-ORG-001",
+      "name": "获取组织树",
+      "startedAtUtc": "2026-02-07T14:22:53.6000936Z",
+      "durationMs": 139,
+      "expected": "200 + tree",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-ORG-002",
+      "name": "获取组织单元详情",
+      "startedAtUtc": "2026-02-07T14:22:53.7456089Z",
+      "durationMs": 106,
+      "expected": "200 + detail",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-ORG-003",
+      "name": "查询组织下员工/岗位",
+      "startedAtUtc": "2026-02-07T14:22:53.8542020Z",
+      "durationMs": 247,
+      "expected": "200 + list",
+      "actual": "emp=400,pos=200",
+      "pass": false,
+      "notes": []
+    },
+    {
+      "id": "TC-ORG-004",
+      "name": "岗位列表查询",
+      "startedAtUtc": "2026-02-07T14:22:54.1056396Z",
+      "durationMs": 119,
+      "expected": "200 + list",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-EMP-001",
+      "name": "员工列表分页",
+      "startedAtUtc": "2026-02-07T14:22:54.2271623Z",
+      "durationMs": 136,
+      "expected": "200 + paging",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-EMP-002",
+      "name": "员工详情",
+      "startedAtUtc": "2026-02-07T14:22:54.3655421Z",
+      "durationMs": 195,
+      "expected": "200 + detail",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-EMP-003",
+      "name": "历史时点查询",
+      "startedAtUtc": "2026-02-07T14:22:54.5638349Z",
+      "durationMs": 148,
+      "expected": "200",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-EMP-004",
+      "name": "任职历史查询",
+      "startedAtUtc": "2026-02-07T14:22:54.7152085Z",
+      "durationMs": 116,
+      "expected": "200 + list",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-NFR-001",
+      "name": "全局异常处理（不存在资源）",
+      "startedAtUtc": "2026-02-07T14:22:54.8326795Z",
+      "durationMs": 124,
+      "expected": "404/400 且不泄露敏感堆栈",
+      "actual": "status=404",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-ATT-008",
+      "name": "班次列表",
+      "startedAtUtc": "2026-02-07T14:22:54.9592503Z",
+      "durationMs": 110,
+      "expected": "200 + list",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-ATT-001",
+      "name": "签到",
+      "startedAtUtc": "2026-02-07T14:22:55.0705856Z",
+      "durationMs": 208,
+      "expected": "200 + today.checkInTime",
+      "actual": "check-in=200,today=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-ATT-002",
+      "name": "签退",
+      "startedAtUtc": "2026-02-07T14:22:55.2831732Z",
+      "durationMs": 209,
+      "expected": "200 + today.checkOutTime",
+      "actual": "check-out=200,today=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-ATT-003",
+      "name": "查询我的考勤记录",
+      "startedAtUtc": "2026-02-07T14:22:55.4949372Z",
+      "durationMs": 174,
+      "expected": "200 + paging",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-ATT-004",
+      "name": "查询今日考勤摘要",
+      "startedAtUtc": "2026-02-07T14:22:55.6841317Z",
+      "durationMs": 92,
+      "expected": "200",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-ATT-005",
+      "name": "月度统计",
+      "startedAtUtc": "2026-02-07T14:22:55.7778448Z",
+      "durationMs": 181,
+      "expected": "200 + stats",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-ATT-006",
+      "name": "HR 查询全量记录与部门统计",
+      "startedAtUtc": "2026-02-07T14:22:55.9628349Z",
+      "durationMs": 210,
+      "expected": "200",
+      "actual": "records=200,dept=404",
+      "pass": false,
+      "notes": []
+    },
+    {
+      "id": "TC-ATT-007",
+      "name": "考勤纠正申请与审批（可达性）",
+      "startedAtUtc": "2026-02-07T14:22:56.1810169Z",
+      "durationMs": 206,
+      "expected": "200",
+      "actual": "apply=200,approve=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-LEAVE-001",
+      "name": "假期类型列表",
+      "startedAtUtc": "2026-02-07T14:22:56.3936708Z",
+      "durationMs": 135,
+      "expected": "200 + list",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-LEAVE-002",
+      "name": "查询我的假期余额",
+      "startedAtUtc": "2026-02-07T14:22:56.5323094Z",
+      "durationMs": 141,
+      "expected": "200 + balances",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-LEAVE-003",
+      "name": "HR 查询指定员工余额",
+      "startedAtUtc": "2026-02-07T14:22:56.6933438Z",
+      "durationMs": 123,
+      "expected": "200",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-LEAVE-007",
+      "name": "非法日期范围校验",
+      "startedAtUtc": "2026-02-07T14:22:56.8180915Z",
+      "durationMs": 88,
+      "expected": "400",
+      "actual": "status=400",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-LEAVE-004C",
+      "name": "提交请假（跨月）",
+      "startedAtUtc": "2026-02-07T14:22:56.9074747Z",
+      "durationMs": 259,
+      "expected": "201/200 + id",
+      "actual": "status=201",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-LEAVE-005",
+      "name": "请假列表/详情",
+      "startedAtUtc": "2026-02-07T14:22:57.3820387Z",
+      "durationMs": 420,
+      "expected": "200 + contains id",
+      "actual": "list=200,detail=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-LEAVE-006",
+      "name": "请假审批",
+      "startedAtUtc": "2026-02-07T14:22:57.8060878Z",
+      "durationMs": 358,
+      "expected": "200 + status=Approved",
+      "actual": "approve=200,after=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-EXP-001",
+      "name": "报销类型列表/详情",
+      "startedAtUtc": "2026-02-07T14:22:58.1664894Z",
+      "durationMs": 204,
+      "expected": "200",
+      "actual": "list=200,detail=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-EXP-002",
+      "name": "提交报销申请（金额边界）",
+      "startedAtUtc": "2026-02-07T14:22:58.3743458Z",
+      "durationMs": 211,
+      "expected": "200/201 + id",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-NFR-002",
+      "name": "输入校验（负金额报销）",
+      "startedAtUtc": "2026-02-07T14:22:58.5874759Z",
+      "durationMs": 176,
+      "expected": "400",
+      "actual": "status=200",
+      "pass": false,
+      "notes": []
+    },
+    {
+      "id": "TC-EXP-003",
+      "name": "报销列表查询",
+      "startedAtUtc": "2026-02-07T14:22:58.7654277Z",
+      "durationMs": 195,
+      "expected": "200",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-EXP-004",
+      "name": "报销审批",
+      "startedAtUtc": "2026-02-07T14:22:58.9641174Z",
+      "durationMs": 199,
+      "expected": "200",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-PAY-001",
+      "name": "周期列表",
+      "startedAtUtc": "2026-02-07T14:22:59.1647498Z",
+      "durationMs": 116,
+      "expected": "200",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-PAY-002",
+      "name": "薪资项列表",
+      "startedAtUtc": "2026-02-07T14:22:59.2826024Z",
+      "durationMs": 106,
+      "expected": "200",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-PAY-006",
+      "name": "周期计算/审批/锁定（接口可达）",
+      "startedAtUtc": "2026-02-07T14:22:59.3900639Z",
+      "durationMs": 298,
+      "expected": "200",
+      "actual": "calc=200,approve=200,lock=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-PAY-003",
+      "name": "员工查询我的薪资单",
+      "startedAtUtc": "2026-02-07T14:22:59.6924449Z",
+      "durationMs": 164,
+      "expected": "200",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-PAY-004",
+      "name": "HR 查询薪资记录列表与详情",
+      "startedAtUtc": "2026-02-07T14:22:59.8585710Z",
+      "durationMs": 269,
+      "expected": "200",
+      "actual": "list=200,detail=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-PAY-005",
+      "name": "HR 查询指定员工薪资记录",
+      "startedAtUtc": "2026-02-07T14:23:00.1350772Z",
+      "durationMs": 102,
+      "expected": "200",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-SCH-001",
+      "name": "查询排班与统计",
+      "startedAtUtc": "2026-02-07T14:23:00.2385306Z",
+      "durationMs": 236,
+      "expected": "200",
+      "actual": "list=200,stats=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-SCH-002",
+      "name": "获取可排班员工与班次模板",
+      "startedAtUtc": "2026-02-07T14:23:00.4774307Z",
+      "durationMs": 206,
+      "expected": "200",
+      "actual": "emp=200,tpl=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-SCH-003",
+      "name": "分配排班写路径（可达性）",
+      "startedAtUtc": "2026-02-07T14:23:00.6856302Z",
+      "durationMs": 99,
+      "expected": "200",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-SET-001",
+      "name": "权限清单",
+      "startedAtUtc": "2026-02-07T14:23:00.7871269Z",
+      "durationMs": 96,
+      "expected": "200",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-SET-002",
+      "name": "角色列表与详情",
+      "startedAtUtc": "2026-02-07T14:23:00.8929761Z",
+      "durationMs": 134,
+      "expected": "200",
+      "actual": "list=200,detail=NA",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-SET-003",
+      "name": "角色权限查询/更新（临时角色）",
+      "startedAtUtc": "2026-02-07T14:23:01.0306564Z",
+      "durationMs": 484,
+      "expected": "200",
+      "actual": "create=200,update=200,delete=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-SET-004",
+      "name": "用户列表查询",
+      "startedAtUtc": "2026-02-07T14:23:01.5245791Z",
+      "durationMs": 155,
+      "expected": "200",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-SET-005",
+      "name": "系统配置查询",
+      "startedAtUtc": "2026-02-07T14:23:01.6820718Z",
+      "durationMs": 105,
+      "expected": "200",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-APPR-001",
+      "name": "审批流配置 CRUD（可达性）",
+      "startedAtUtc": "2026-02-07T14:23:01.7888602Z",
+      "durationMs": 397,
+      "expected": "200",
+      "actual": "list=200,create=200,delete=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-AUD-001",
+      "name": "审计日志查询与导出",
+      "startedAtUtc": "2026-02-07T14:23:02.1899139Z",
+      "durationMs": 196,
+      "expected": "200",
+      "actual": "list=200,export=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-COMP-004",
+      "name": "获取当前租户信息",
+      "startedAtUtc": "2026-02-07T14:23:02.3876414Z",
+      "durationMs": 102,
+      "expected": "200",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-COMP-001",
+      "name": "成本中心树查询",
+      "startedAtUtc": "2026-02-07T14:23:02.4909113Z",
+      "durationMs": 223,
+      "expected": "200",
+      "actual": "tree=200,create=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-COMP-002",
+      "name": "标签列表查询",
+      "startedAtUtc": "2026-02-07T14:23:02.7155127Z",
+      "durationMs": 196,
+      "expected": "200",
+      "actual": "list=200,create=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-COMP-003",
+      "name": "打卡设备列表查询",
+      "startedAtUtc": "2026-02-07T14:23:02.9133511Z",
+      "durationMs": 214,
+      "expected": "200",
+      "actual": "list=200,create=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-INS-001",
+      "name": "保险接口可达",
+      "startedAtUtc": "2026-02-07T14:23:03.1317605Z",
+      "durationMs": 300,
+      "expected": "200",
+      "actual": "plans=200,benefits=200,stats=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-TAX-001",
+      "name": "个税接口可达",
+      "startedAtUtc": "2026-02-07T14:23:03.4355023Z",
+      "durationMs": 306,
+      "expected": "200",
+      "actual": "profiles=200,records=200,settings=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-AI-001",
+      "name": "AI 对话（Mock）",
+      "startedAtUtc": "2026-02-07T14:23:03.7475420Z",
+      "durationMs": 633,
+      "expected": "200 + reply",
+      "actual": "status=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-AI-002",
+      "name": "AI 历史查询/清理",
+      "startedAtUtc": "2026-02-07T14:23:04.3821433Z",
+      "durationMs": 307,
+      "expected": "200 + cleared",
+      "actual": "get1=200,del=200,get2=200",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-AUTH-005",
+      "name": "Logout（撤销 RefreshToken）",
+      "startedAtUtc": "2026-02-07T14:23:04.6918443Z",
+      "durationMs": 758,
+      "expected": "logout 200 且 refresh 401",
+      "actual": "logout=200,refresh=401",
+      "pass": true,
+      "notes": []
+    },
+    {
+      "id": "TC-PERF-001",
+      "name": "性能基准抽样",
+      "startedAtUtc": "2026-02-07T14:23:05.4546328Z",
+      "durationMs": 13031,
+      "expected": "每接口 30 次采样，输出 p50/p95",
+      "actual": "[\r\n  {\r\n    \"name\": \"OrganizationsTree\",\r\n    \"path\": \"/api/Organizations/tree\",\r\n    \"samples\": 30,\r\n    \"p50\": 148.0,\r\n    \"p95\": 175.0,\r\n    \"errorRate\": 0.0\r\n  },\r\n  {\r\n    \"name\": \"EmployeesList\",\r\n    \"path\": \"/api/Employees?page=1&pageSize=20\",\r\n    \"samples\": 30,\r\n    \"p50\": 134.0,\r\n    \"p95\": 166.0,\r\n    \"errorRate\": 0.0\r\n  },\r\n  {\r\n    \"name\": \"LeaveBalancesMy\",\r\n    \"path\": \"/api/Leave/balances/my\",\r\n    \"samples\": 30,\r\n    \"p50\": 133.0,\r\n    \"p95\": 172.0,\r\n    \"errorRate\": 0.0\r\n  }\r\n]",
+      "pass": true,
+      "notes": []
+    }
+  ],
+  "perf": [
+    {
+      "name": "OrganizationsTree",
+      "path": "/api/Organizations/tree",
+      "samples": 30,
+      "p50": 148.0,
+      "p95": 175.0,
+      "errorRate": 0.0
+    },
+    {
+      "name": "EmployeesList",
+      "path": "/api/Employees?page=1&pageSize=20",
+      "samples": 30,
+      "p50": 134.0,
+      "p95": 166.0,
+      "errorRate": 0.0
+    },
+    {
+      "name": "LeaveBalancesMy",
+      "path": "/api/Leave/balances/my",
+      "samples": 30,
+      "p50": 133.0,
+      "p95": 172.0,
+      "errorRate": 0.0
+    }
+  ]
+}

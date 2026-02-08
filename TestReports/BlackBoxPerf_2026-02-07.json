@@ -1,0 +1,26 @@
+[
+  {
+    "name": "OrganizationsTree",
+    "path": "/api/Organizations/tree",
+    "samples": 30,
+    "p50": 148.0,
+    "p95": 175.0,
+    "errorRate": 0.0
+  },
+  {
+    "name": "EmployeesList",
+    "path": "/api/Employees?page=1&pageSize=20",
+    "samples": 30,
+    "p50": 134.0,
+    "p95": 166.0,
+    "errorRate": 0.0
+  },
+  {
+    "name": "LeaveBalancesMy",
+    "path": "/api/Leave/balances/my",
+    "samples": 30,
+    "p50": 133.0,
+    "p95": 172.0,
+    "errorRate": 0.0
+  }
+]
