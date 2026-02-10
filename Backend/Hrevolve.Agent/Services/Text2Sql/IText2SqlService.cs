@@ -11,9 +11,13 @@ public interface IText2SqlService
     /// 将自然语言查询转换为结构化查询请求
     /// </summary>
     /// <param name="naturalQuery">自然语言查询</param>
+    /// <param name="conversationContext">可选对话上下文（用于消歧）</param>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>结构化查询请求</returns>
-    Task<Text2SqlResult> ConvertAsync(string naturalQuery, CancellationToken cancellationToken = default);
+    Task<Text2SqlResult> ConvertAsync(
+        string naturalQuery,
+        string? conversationContext = null,
+        CancellationToken cancellationToken = default);
     
     /// <summary>
     /// 验证查询意图是否属于 HR 领域

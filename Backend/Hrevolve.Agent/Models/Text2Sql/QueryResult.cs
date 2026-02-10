@@ -40,6 +40,12 @@ public class QueryResult
     
     /// <summary>列信息（字段名和类型）</summary>
     public List<ColumnInfo> Columns { get; set; } = [];
+
+    /// <summary>生成的 SQL（可选）</summary>
+    public string? GeneratedSql { get; set; }
+
+    /// <summary>告警信息（可选）</summary>
+    public List<string> Warnings { get; set; } = [];
     
     /// <summary>创建成功结果</summary>
     public static QueryResult Ok(List<Dictionary<string, object?>> data, int rowCount, List<ColumnInfo>? columns = null) => new()

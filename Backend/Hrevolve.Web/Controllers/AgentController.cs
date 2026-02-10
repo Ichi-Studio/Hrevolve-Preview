@@ -33,7 +33,7 @@ public class AgentController(
         
         var response = await agentService.ChatAsync(employeeId, request.Message, cancellationToken);
         
-        return Ok(new { reply = response });
+        return Ok(response);
     }
     
     /// <summary>

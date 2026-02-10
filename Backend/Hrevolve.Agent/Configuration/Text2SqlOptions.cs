@@ -84,4 +84,7 @@ public class Text2SqlOptions
     
     /// <summary>查询复杂度限制分数（超过则拒绝）</summary>
     public int MaxComplexityScore { get; set; } = 50;
+
+    /// <summary>是否在 Agent 响应中包含生成的 SQL</summary>
+    public bool IncludeGeneratedSqlInResponse { get; set; } = false;
 }

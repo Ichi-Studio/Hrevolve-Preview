@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text.Json;
 using Hrevolve.Agent.Configuration;
 using Hrevolve.Agent.Models.Text2Sql;
+using Hrevolve.Agent.Services.Models;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -13,7 +14,7 @@ namespace Hrevolve.Agent.Services.Text2Sql;
 /// </summary>
 public class Text2SqlService : IText2SqlService
 {
-    private readonly IChatClient _chatClient;
+    private readonly IAgentChatClientProvider _clientProvider;
     private readonly ISchemaProvider _schemaProvider;
     private readonly ISqlSecurityValidator _securityValidator;
     private readonly Text2SqlOptions _options;
@@ -27,20 +28,23 @@ public class Text2SqlService : IText2SqlService
     };
 
     public Text2SqlService(
-        IChatClient chatClient,
+        IAgentChatClientProvider clientProvider,
         ISchemaProvider schemaProvider,
         ISqlSecurityValidator securityValidator,
         IOptions<Text2SqlOptions> options,
         ILogger<Text2SqlService> logger)
     {
-        _chatClient = chatClient;
+        _clientProvider = clientProvider;
         _schemaProvider = schemaProvider;
         _securityValidator = securityValidator;
         _options = options.Value;
         _logger = logger;
     }
 
-    public async Task<Text2SqlResult> ConvertAsync(string naturalQuery, CancellationToken cancellationToken = default)
+    public async Task<Text2SqlResult> ConvertAsync(
+        string naturalQuery,
+        string? conversationContext = null,
+        CancellationToken cancellationToken = default)
     {
         var stopwatch = Stopwatch.StartNew();
 
@@ -55,7 +59,7 @@ public class Text2SqlService : IText2SqlService
 
             // 2. 构建提示词
             var systemPrompt = BuildSystemPrompt();
-            var userPrompt = BuildUserPrompt(naturalQuery);
+            var userPrompt = BuildUserPrompt(naturalQuery, conversationContext);
 
             // 3. 调用 LLM
             var messages = new List<ChatMessage>
@@ -64,7 +68,8 @@ public class Text2SqlService : IText2SqlService
                 new(ChatRole.User, userPrompt)
             };
 
-            var response = await _chatClient.GetResponseAsync(messages, cancellationToken: cancellationToken);
+            var chatClient = _clientProvider.GetClient(ModelPurpose.Text2Sql);
+            var response = await chatClient.GetResponseAsync(messages, cancellationToken: cancellationToken);
             var responseText = response.Text ?? "";
 
             _logger.LogDebug("LLM 响应: {Response}", responseText);
@@ -201,9 +206,18 @@ public class Text2SqlService : IText2SqlService
         return sb.ToString();
     }
 
-    private static string BuildUserPrompt(string naturalQuery)
+    private static string BuildUserPrompt(string naturalQuery, string? conversationContext)
     {
+        var contextBlock = string.IsNullOrWhiteSpace(conversationContext)
+            ? ""
+            : $"""
+                对话上下文（用于消歧）：
+                {conversationContext}
+
+                """;
+
         return $"""
+            {contextBlock}
             请将以下查询转换为 JSON 格式的结构化查询：
 
             {naturalQuery}

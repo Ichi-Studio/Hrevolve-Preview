@@ -143,6 +143,16 @@ public class DynamicQueryExecutor : IQueryExecutor
         }
         query = query.Take(Math.Min(request.Limit, _options.MaxResultRows));
 
+        string? generatedSql = null;
+        try
+        {
+            generatedSql = query.ToQueryString();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "生成 SQL 失败（Select）");
+        }
+
         // 执行查询
         var entities = await query.ToListAsync(cancellationToken);
 
@@ -152,7 +162,9 @@ public class DynamicQueryExecutor : IQueryExecutor
         // 获取列信息
         var columns = GetColumnInfos(request.SelectFields, request.TargetEntity);
 
-        return QueryResult.Ok(data, data.Count, columns);
+        var result = QueryResult.Ok(data, data.Count, columns);
+        result.GeneratedSql = generatedSql;
+        return result;
     }
 
     private async Task<QueryResult> ExecuteAggregationAsync<TEntity>(IQueryable<TEntity> query, QueryRequest request, CancellationToken cancellationToken)
@@ -160,6 +172,16 @@ public class DynamicQueryExecutor : IQueryExecutor
     {
         try
         {
+            string? generatedSql = null;
+            try
+            {
+                generatedSql = TryGenerateAggregationSql(query, request);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "生成 SQL 失败（Aggregation）");
+            }
+
             object? result = null;
 
             switch (request.Aggregation)
@@ -193,13 +215,36 @@ public class DynamicQueryExecutor : IQueryExecutor
                     break;
             }
 
-            return QueryResult.OkAggregation(result);
+            var ok = QueryResult.OkAggregation(result);
+            ok.GeneratedSql = generatedSql;
+            if (request.Aggregation.HasValue && request.Aggregation != AggregationType.Count && !string.IsNullOrWhiteSpace(generatedSql))
+            {
+                ok.Warnings.Add("generated-sql-approx");
+            }
+            return ok;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "聚合查询失败");
             return QueryResult.Fail("聚合查询失败，请检查字段类型是否支持该操作");
         }
+    }
+
+    private string? TryGenerateAggregationSql<TEntity>(IQueryable<TEntity> query, QueryRequest request)
+        where TEntity : class
+    {
+        if (!request.Aggregation.HasValue)
+        {
+            return null;
+        }
+
+        if (request.Aggregation == AggregationType.Count)
+        {
+            var aggQuery = query.GroupBy(_ => 1).Select(g => g.Count());
+            return aggQuery.ToQueryString();
+        }
+
+        return query.ToQueryString();
     }
 
     private async Task<object?> ExecuteNumericAggregation<TEntity>(IQueryable<TEntity> query, string fieldName, string operation, CancellationToken cancellationToken)
