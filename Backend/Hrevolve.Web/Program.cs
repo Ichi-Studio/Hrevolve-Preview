@@ -1,20 +1,38 @@
+using Microsoft.AspNetCore.HttpOverrides;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // 配置 Kestrel 启用 HTTP/3
 builder.WebHost.ConfigureKestrel(options =>
 {
-    // HTTP 端口（开发环境）
-    options.ListenLocalhost(5224, listenOptions =>
+    var runningInContainer = string.Equals(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"), "true", StringComparison.OrdinalIgnoreCase);
+    var bindAnyIp = builder.Configuration.GetValue<bool?>("Kestrel:BindAnyIP") ?? runningInContainer;
+    var httpPort = builder.Configuration.GetValue<int?>("Kestrel:HttpPort") ?? (bindAnyIp ? 8080 : 5224);
+    var httpsPort = builder.Configuration.GetValue<int?>("Kestrel:HttpsPort") ?? 5225;
+    var enableHttps = builder.Configuration.GetValue<bool?>("Kestrel:EnableHttps") ?? (!bindAnyIp);
+
+    if (bindAnyIp)
+    {
+        options.ListenAnyIP(httpPort, listenOptions =>
+        {
+            listenOptions.Protocols = HttpProtocols.Http1AndHttp2;
+        });
+        return;
+    }
+
+    options.ListenLocalhost(httpPort, listenOptions =>
     {
         listenOptions.Protocols = HttpProtocols.Http1AndHttp2;
     });
-    
-    // HTTPS 端口，支持 HTTP/1.1、HTTP/2 和 HTTP/3
-    options.ListenLocalhost(5225, listenOptions =>
+
+    if (enableHttps)
     {
-        listenOptions.Protocols = HttpProtocols.Http1AndHttp2AndHttp3;
-        listenOptions.UseHttps();
-    });
+        options.ListenLocalhost(httpsPort, listenOptions =>
+        {
+            listenOptions.Protocols = HttpProtocols.Http1AndHttp2AndHttp3;
+            listenOptions.UseHttps();
+        });
+    }
 
 });
 
@@ -145,17 +163,32 @@ if (app.Environment.IsDevelopment())
 // CORS必须在其他中间件之前
 app.UseCors("AllowAll");
 
-// 添加 Alt-Svc 头，通知客户端支持 HTTP/3
-app.Use(async (context, next) =>
+var forwardedHeadersOptions = new ForwardedHeadersOptions
 {
-    context.Response.Headers.AltSvc = "h3=\":5225\"; ma=86400";
-    await next();
-});
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+forwardedHeadersOptions.KnownProxies.Clear();
+forwardedHeadersOptions.KnownIPNetworks.Clear();
+app.UseForwardedHeaders(forwardedHeadersOptions);
+
+var enableHttpsRedirection = builder.Configuration.GetValue<bool?>("Kestrel:EnableHttpsRedirection") ?? !string.Equals(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"), "true", StringComparison.OrdinalIgnoreCase);
+if (enableHttpsRedirection)
+{
+    app.UseHttpsRedirection();
+}
+
+var enableAltSvc = builder.Configuration.GetValue<bool?>("Kestrel:EnableAltSvc") ?? (app.Environment.IsDevelopment() && !string.Equals(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"), "true", StringComparison.OrdinalIgnoreCase));
+if (enableAltSvc)
+{
+    app.Use(async (context, next) =>
+    {
+        context.Response.Headers.AltSvc = "h3=\":5225\"; ma=86400";
+        await next();
+    });
+}
 
 // 全局异常处理
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-
-app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 
@@ -173,6 +206,7 @@ app.MapControllers();
 
 // 健康检查端点
 app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Timestamp = DateTime.UtcNow }));
+app.MapGet("/api/health", () => Results.Ok(new { Status = "Healthy", Timestamp = DateTime.UtcNow }));
 
 try
 {

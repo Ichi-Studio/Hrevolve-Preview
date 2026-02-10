@@ -1,0 +1,54 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-hrevolve}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis-data:/data
+
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama-data:/root/.ollama
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+
+  api:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE}/hrevolve-api:${IMAGE_TAG:-latest}
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Kestrel__BindAnyIP: "true"
+      Kestrel__HttpPort: "8080"
+      Kestrel__EnableHttps: "false"
+      Kestrel__EnableHttpsRedirection: "false"
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-hrevolve};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      ConnectionStrings__Redis: redis:6379,connectTimeout=500,syncTimeout=500,abortConnect=false
+      Jwt__Key: ${JWT_KEY}
+      Jwt__Issuer: ${JWT_ISSUER:-https://hrevolve.local}
+      Jwt__Audience: ${JWT_AUDIENCE:-https://hrevolve.local}
+      AI__Provider: Ollama
+      AI__Ollama__Endpoint: http://ollama:11434
+      Seed__Demo: ${SEED_DEMO:-false}
+    depends_on:
+      - postgres
+      - redis
+      - ollama
+
+  web:
+    image: ${REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE}/hrevolve-web:${IMAGE_TAG:-latest}
+    depends_on:
+      - api
+    ports:
+      - "${WEB_PORT:-8080}:80"
+
+volumes:
+  postgres-data:
+  redis-data:
+  ollama-data:

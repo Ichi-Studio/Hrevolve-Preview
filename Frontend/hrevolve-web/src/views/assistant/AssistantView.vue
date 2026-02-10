@@ -7,7 +7,6 @@ import { Promotion, Delete, ChatDotRound, UserFilled, Service } from '@element-p
 import { agentApi } from '@/api';
 import { useAuthStore } from '@/stores/auth';
 import type { ChatMessage } from '@/types';
-import dayjs from 'dayjs';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -127,11 +126,6 @@ const loadHistory = async () => {
   } catch {
     // 忽略错误
   }
-};
-
-// 格式化时间
-const formatTime = (timestamp: string) => {
-  return dayjs(timestamp).format('HH:mm');
 };
 
 const goToUserManagement = () => {
