@@ -1,9 +1,0 @@
-{
-  "emmet.triggerExpansionOnTab": true,
-  "emmet.showExpandedAbbreviation": "always",
-  "emmet.includeLanguages": {
-    "vue": "html",
-    "javascript": "javascriptreact",
-    "typescript": "typescriptreact"
-  }
-}
