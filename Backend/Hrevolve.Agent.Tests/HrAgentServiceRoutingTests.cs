@@ -86,6 +86,47 @@ public sealed class HrAgentServiceRoutingTests
         Assert.Contains("查询结果", envelope.Reply);
     }
 
+    [Fact]
+    public async Task ChatAsync_RequestCanceled_ReturnsCancelledEnvelope()
+    {
+        var employeeId = Guid.NewGuid();
+        var currentUserAccessor = new CurrentUserAccessor
+        {
+            CurrentUser = new CurrentUser
+            {
+                Id = Guid.NewGuid(),
+                EmployeeId = employeeId,
+                TenantId = Guid.NewGuid(),
+                Roles = ["user"],
+                Permissions = ["hr:read"]
+            }
+        };
+
+        var chatClientProvider = new FakeAgentChatClientProvider(new()
+        {
+            [ModelPurpose.Chat] = ("chat", new FakeChatClient((_, _, _) =>
+                Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, "ok"))))),
+        });
+
+        var service = new HrAgentService(
+            chatClientProvider,
+            new EmptyToolProvider(),
+            new CancelingRouter(),
+            new FixedText2SqlService(new QueryRequest { Operation = QueryOperation.Select, TargetEntity = "Employee", Limit = 1 }),
+            new FixedQueryExecutor(QueryResult.Ok([], 0, [])),
+            currentUserAccessor,
+            Options.Create(new Text2SqlOptions()),
+            new AgentMetrics(),
+            NullLogger<HrAgentService>.Instance);
+
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+        var envelope = await service.ChatAsync(employeeId, "hi", cts.Token);
+
+        Assert.Equal("chat", envelope.Route);
+        Assert.Equal("请求已取消。", envelope.Reply);
+    }
+
     private sealed class EmptyToolProvider : IHrToolProvider
     {
         public IList<AITool> GetTools() => [];
@@ -97,6 +138,12 @@ public sealed class HrAgentServiceRoutingTests
         public FixedRouter(RouteDecision decision) => _decision = decision;
         public Task<RouteDecision> RouteAsync(string message, IReadOnlyList<AgentChatMessage> recentHistory, CancellationToken cancellationToken = default)
             => Task.FromResult(_decision);
+    }
+
+    private sealed class CancelingRouter : IAgentSemanticRouter
+    {
+        public Task<RouteDecision> RouteAsync(string message, IReadOnlyList<AgentChatMessage> recentHistory, CancellationToken cancellationToken = default)
+            => Task.FromCanceled<RouteDecision>(cancellationToken);
     }
 
     private sealed class FixedText2SqlService : IText2SqlService

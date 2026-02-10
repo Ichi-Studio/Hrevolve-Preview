@@ -4,7 +4,7 @@ public sealed class AiModelOptions
 {
     public const string SectionName = "AI";
 
-    public string Provider { get; set; } = "OpenAI";
+    public string Provider { get; set; } = "Ollama";
 
     public string? ApiKey { get; set; }
 

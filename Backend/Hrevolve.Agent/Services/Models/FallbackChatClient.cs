@@ -54,6 +54,7 @@ public sealed class FallbackChatClient : IChatClient
         }
 
         Exception? lastException = null;
+        string? primaryFailureKind = null;
 
         for (var i = 0; i < _candidates.Count; i++)
         {
@@ -79,7 +80,7 @@ public sealed class FallbackChatClient : IChatClient
                     }
                     if (i > 0)
                     {
-                        _metrics.RecordFallback(_candidates[0].Provider, provider, "exception");
+                        _metrics.RecordFallback(_candidates[0].Provider, provider, primaryFailureKind ?? "exception");
                     }
                     return response;
                 }
@@ -89,6 +90,10 @@ public sealed class FallbackChatClient : IChatClient
                     sw.Stop();
                     _metrics.RecordModelError(_purpose, provider);
                     _metrics.RecordModelLatency(_purpose, sw.Elapsed.TotalMilliseconds, provider, model);
+                    if (i == 0 && primaryFailureKind == null)
+                    {
+                        primaryFailureKind = "timeout";
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -96,17 +101,28 @@ public sealed class FallbackChatClient : IChatClient
                     sw.Stop();
                     _metrics.RecordModelError(_purpose, provider);
                     _metrics.RecordModelLatency(_purpose, sw.Elapsed.TotalMilliseconds, provider, model);
+                    if (i == 0 && primaryFailureKind == null)
+                    {
+                        primaryFailureKind = ex.GetType().Name;
+                    }
                 }
 
                 _logger.LogWarning(
                     lastException,
-                    "模型调用失败（provider={Provider}, model={Model}, attempt={Attempt}/{MaxAttempt}, fallbackIndex={Index}）",
-                    provider, model, attempt + 1, 1 + _retryCount, i);
+                    "模型调用失败（provider={Provider}, model={Model}, attempt={Attempt}/{MaxAttempt}, fallbackIndex={Index}, elapsedMs={ElapsedMs}, timeoutSeconds={TimeoutSeconds}）",
+                    provider, model, attempt + 1, 1 + _retryCount, i, sw.ElapsedMilliseconds, _timeoutSeconds);
 
                 if (attempt < _retryCount)
                 {
                     var backoff = _retryBackoffMs * (attempt + 1);
-                    await Task.Delay(backoff, cancellationToken);
+                    try
+                    {
+                        await Task.Delay(backoff, cancellationToken);
+                    }
+                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                    {
+                        throw;
+                    }
                 }
             }
         }

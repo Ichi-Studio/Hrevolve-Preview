@@ -10,7 +10,6 @@
   <ItemGroup>
     <!-- Microsoft Agent Framework - 下一代AI Agent框架（当前仍为预览版） -->
     <PackageReference Include="Microsoft.Agents.AI" Version="1.0.0-preview.251219.1" />
-    <PackageReference Include="Microsoft.Agents.AI.OpenAI" Version="1.0.0-preview.251219.1" />
     
     <!-- 配置绑定扩展 -->
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.1" />

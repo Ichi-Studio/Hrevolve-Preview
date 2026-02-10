@@ -122,6 +122,15 @@ public sealed class HrAgentService : IHrAgentService
                 CorrelationId: correlationId,
                 Timestamp: DateTimeOffset.UtcNow);
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            _logger.LogInformation("HR Agent请求已取消");
+            return new AgentChatEnvelope(
+                Reply: "请求已取消。",
+                Route: "chat",
+                CorrelationId: correlationId,
+                Timestamp: DateTimeOffset.UtcNow);
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "HR Agent处理消息失败");

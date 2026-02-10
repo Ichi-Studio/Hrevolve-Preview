@@ -49,7 +49,7 @@ public sealed class ConfiguredAgentChatClientProvider : IAgentChatClientProvider
                 return existing.ModelName;
             }
 
-            var provider = (_options.Provider ?? "OpenAI").Trim();
+            var provider = (_options.Provider ?? "Ollama").Trim();
             var modelName = ResolveModelName(purpose, provider);
             return modelName;
         }
@@ -69,7 +69,7 @@ public sealed class ConfiguredAgentChatClientProvider : IAgentChatClientProvider
 
     private (string ModelName, IChatClient Client) CreateClient(ModelPurpose purpose)
     {
-        var provider = (_options.Provider ?? "OpenAI").Trim();
+        var provider = (_options.Provider ?? "Ollama").Trim();
         var primaryModelName = ResolveModelName(purpose, provider);
 
         var candidates = BuildCandidates(purpose, provider);
@@ -100,25 +100,13 @@ public sealed class ConfiguredAgentChatClientProvider : IAgentChatClientProvider
         {
             var modelName = ResolveModelName(purpose, "ollama");
             candidates.Add(("ollama", modelName, () => CreateOllamaClient(modelName)));
-
-            if (!string.IsNullOrWhiteSpace(_options.ApiKey))
-            {
-                var openAiModel = ResolveModelName(purpose, "openai");
-                candidates.Add(("openai", openAiModel, () => CreateOpenAiClient(openAiModel)));
-            }
-
             candidates.Add(("mock", "mock-model", () => new MockChatClient()));
             return candidates;
         }
 
         if (provider.Equals("openai", StringComparison.OrdinalIgnoreCase))
         {
-            if (!string.IsNullOrWhiteSpace(_options.ApiKey))
-            {
-                var openAiModel = ResolveModelName(purpose, "openai");
-                candidates.Add(("openai", openAiModel, () => CreateOpenAiClient(openAiModel)));
-            }
-
+            _logger.LogWarning("已禁用 OpenAI Provider，当前将回退到 Mock（purpose={Purpose}）", purpose);
             candidates.Add(("mock", "mock-model", () => new MockChatClient()));
             return candidates;
         }
@@ -136,20 +124,7 @@ public sealed class ConfiguredAgentChatClientProvider : IAgentChatClientProvider
         }
 
         _logger.LogInformation("创建 Ollama 客户端（model={Model}） @ {Endpoint}", modelName, uri);
-        return new OllamaApiClient(uri, modelName);
-    }
-
-    private IChatClient CreateOpenAiClient(string modelName)
-    {
-        var apiKey = _options.ApiKey;
-        if (string.IsNullOrWhiteSpace(apiKey))
-        {
-            throw new InvalidOperationException("OpenAI ApiKey is not configured.");
-        }
-
-        _logger.LogInformation("创建 OpenAI 客户端（model={Model}）", modelName);
-        var client = new OpenAIClient(apiKey);
-        return client.GetChatClient(modelName).AsIChatClient();
+        return new ToolStrippingChatClient(new OllamaApiClient(uri, modelName));
     }
 
     private string ResolveModelName(ModelPurpose purpose, string provider)
@@ -168,10 +143,10 @@ public sealed class ConfiguredAgentChatClientProvider : IAgentChatClientProvider
 
         return purpose switch
         {
-            ModelPurpose.Chat => chatModel ?? model ?? "gpt-4o",
-            ModelPurpose.Text2Sql => text2SqlModel ?? model ?? "gpt-4o",
-            ModelPurpose.Router => routerModel ?? chatModel ?? model ?? "gpt-4o",
-            _ => model ?? "gpt-4o"
+            ModelPurpose.Chat => chatModel ?? model ?? "qwen3:4b",
+            ModelPurpose.Text2Sql => text2SqlModel ?? model ?? "sqlcoder7b",
+            ModelPurpose.Router => routerModel ?? chatModel ?? model ?? "qwen3:4b",
+            _ => model ?? "qwen3:4b"
         };
     }
 }

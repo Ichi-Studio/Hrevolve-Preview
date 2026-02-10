@@ -17,9 +17,6 @@ global using Microsoft.Extensions.DependencyInjection;
 global using Microsoft.Extensions.Logging;
 global using Microsoft.Extensions.Options;
 
-// OpenAI
-global using OpenAI;
-
 // 应用层
 global using Hrevolve.Application;
 
