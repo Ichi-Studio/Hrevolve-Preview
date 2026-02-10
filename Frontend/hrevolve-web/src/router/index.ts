@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import MainLayout from '@/layouts/MainLayout.vue';
+import DashboardView from '@/views/dashboard/DashboardView.vue';
 
 // 路由配置
 const routes: RouteRecordRaw[] = [
@@ -11,13 +13,13 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/',
-    component: () => import('@/layouts/MainLayout.vue'),
+    component: MainLayout,
     meta: { requiresAuth: true },
     children: [
       {
         path: '',
         name: 'Dashboard',
-        component: () => import('@/views/dashboard/DashboardView.vue'),
+        component: DashboardView,
         meta: { titleKey: 'menu.dashboard', icon: 'HomeFilled' },
       },
       // 员工自助

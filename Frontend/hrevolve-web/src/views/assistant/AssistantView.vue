@@ -3,7 +3,7 @@ import { ref, computed, nextTick, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Promotion, Delete, ChatDotRound } from '@element-plus/icons-vue';
+import { Promotion, Delete, ChatDotRound, UserFilled, Service } from '@element-plus/icons-vue';
 import { agentApi } from '@/api';
 import { useAuthStore } from '@/stores/auth';
 import type { ChatMessage } from '@/types';
@@ -173,7 +173,7 @@ onMounted(() => {
         <!-- 欢迎消息 -->
         <div v-if="messages.length === 0" class="welcome-message">
           <div class="welcome-avatar">
-            <span>🤖</span>
+            <el-icon :size="48" color="#D4AF37"><Service /></el-icon>
           </div>
           <h3>{{ t('assistantExtra.welcomeTitle') }}</h3>
           <p>{{ t('assistantExtra.welcomeDesc') }}</p>
@@ -217,8 +217,8 @@ onMounted(() => {
           :class="['message', message.role]"
         >
           <div class="message-avatar">
-            <template v-if="message.role === 'user'">👤</template>
-            <template v-else>🤖</template>
+            <el-icon v-if="message.role === 'user'"><UserFilled /></el-icon>
+            <el-icon v-else><Service /></el-icon>
           </div>
           
           <div class="message-content">
@@ -229,7 +229,6 @@ onMounted(() => {
             </div>
             <template v-else>
               <div class="message-text" v-html="message.content.replace(/\n/g, '<br>')"></div>
-              <div class="message-time">{{ formatTime(message.timestamp) }}</div>
             </template>
           </div>
         </div>
@@ -471,7 +470,7 @@ $border-color: rgba(212, 175, 55, 0.2);
   .message {
     display: flex;
     gap: 12px;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
     animation: fadeIn 0.3s ease;
     
     &.user {
@@ -480,7 +479,8 @@ $border-color: rgba(212, 175, 55, 0.2);
       .message-content {
         background: linear-gradient(135deg, $gold-primary 0%, $gold-dark 100%);
         color: $bg-dark;
-        border-radius: 16px 16px 4px 16px;
+        border-radius: 20px 20px 4px 20px;
+        box-shadow: 0 4px 12px rgba(212, 175, 55, 0.15);
         
         .message-time {
           color: rgba(0, 0, 0, 0.5);
@@ -492,38 +492,37 @@ $border-color: rgba(212, 175, 55, 0.2);
       .message-content {
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid $border-color;
-        border-radius: 16px 16px 16px 4px;
+        border-radius: 20px 20px 20px 4px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
       }
     }
     
     .message-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid $border-color;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
+      font-size: 22px;
       flex-shrink: 0;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      color: $gold-primary;
     }
     
     .message-content {
-      max-width: 70%;
-      padding: 14px 18px;
+      max-width: 75%;
+      padding: 12px 18px;
+      display: inline-block;
       
       .message-text {
-        line-height: 1.7;
+        line-height: 1.6;
         word-break: break-word;
         font-size: 14px;
-      }
-      
-      .message-time {
-        font-size: 11px;
-        color: $text-tertiary;
-        margin-top: 6px;
-        text-align: right;
+        letter-spacing: 0.3px;
+        display: inline;
       }
     }
   }
