@@ -136,7 +136,10 @@ using (var scope = app.Services.CreateScope())
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-    app.MapScalarApiReference();
+    app.MapScalarApiReference(options => 
+    {
+        options.WithOpenApiRoutePattern("/openapi/v1.json");
+    });
 }
 
 // CORS必须在其他中间件之前
