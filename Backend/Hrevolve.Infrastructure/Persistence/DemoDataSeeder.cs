@@ -40,6 +40,8 @@ public class DemoDataSeeder(HrevolveDbContext context, ILogger<DemoDataSeeder> l
         {
             logger.LogInformation("演示数据已存在，尝试补全演示考勤数据: {TenantCode}", DemoTenantCode);
             await EnsureAttendanceDemoDataAsync(tenantId, random, today, nowUtc, cancellationToken);
+            await EnsureDemoUserEmployeeLinksAsync(tenantId, cancellationToken);
+            await EnsureDemoUserLeaveAndPayrollAsync(tenantId, random, today, cancellationToken);
             return;
         }
 
@@ -93,6 +95,363 @@ public class DemoDataSeeder(HrevolveDbContext context, ILogger<DemoDataSeeder> l
         await context.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation("演示数据创建完成: {TenantCode}", DemoTenantCode);
+    }
+
+    private async Task EnsureDemoUserEmployeeLinksAsync(Guid tenantId, CancellationToken cancellationToken)
+    {
+        var demoAdminUser = await context.Users.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Username == DemoAdminUsername, cancellationToken);
+        var demoHrUser = await context.Users.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Username == "demo_hr", cancellationToken);
+        var demoEmployeeUser = await context.Users.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Username == "demo_user", cancellationToken);
+
+        if (demoAdminUser == null || demoHrUser == null || demoEmployeeUser == null) return;
+
+        var ceoEmployeeId = await context.Employees.IgnoreQueryFilters()
+            .Where(e => e.TenantId == tenantId && e.EmployeeNumber == "CEO0001")
+            .Select(e => e.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+        var demoAdminEmployeeIdFallback = await context.Employees.IgnoreQueryFilters()
+            .Where(e => e.TenantId == tenantId && e.EmployeeNumber == "ADM1001")
+            .Select(e => e.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+        var demoHrEmployeeId = await context.Employees.IgnoreQueryFilters()
+            .Where(e => e.TenantId == tenantId && e.EmployeeNumber == "HR2001")
+            .Select(e => e.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+        var demoEmployeeId = await context.Employees.IgnoreQueryFilters()
+            .Where(e => e.TenantId == tenantId && e.EmployeeNumber == "EMP3001")
+            .Select(e => e.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var changed = false;
+
+        var desiredAdminEmployeeId = ceoEmployeeId != Guid.Empty ? ceoEmployeeId : demoAdminEmployeeIdFallback;
+        if (desiredAdminEmployeeId != Guid.Empty && demoAdminUser.EmployeeId != desiredAdminEmployeeId)
+        {
+            demoAdminUser.LinkEmployee(desiredAdminEmployeeId);
+            changed = true;
+        }
+
+        if (demoHrEmployeeId != Guid.Empty && demoHrUser.EmployeeId != demoHrEmployeeId)
+        {
+            demoHrUser.LinkEmployee(demoHrEmployeeId);
+            changed = true;
+        }
+
+        if (demoEmployeeId != Guid.Empty && demoEmployeeUser.EmployeeId != demoEmployeeId)
+        {
+            demoEmployeeUser.LinkEmployee(demoEmployeeId);
+            changed = true;
+        }
+
+        if (!changed) return;
+
+        await context.SaveChangesAsync(cancellationToken);
+        logger.LogInformation(
+            "已修正演示账号与员工关联: demo_admin={AdminEmployeeNo}, demo_hr={HrEmployeeNo}, demo_user={EmployeeNo}",
+            desiredAdminEmployeeId == ceoEmployeeId ? "CEO0001" : "ADM1001",
+            "HR2001",
+            "EMP3001");
+    }
+
+    private async Task EnsureDemoUserLeaveAndPayrollAsync(
+        Guid tenantId,
+        Random random,
+        DateOnly today,
+        CancellationToken cancellationToken)
+    {
+        var demoUsers = await context.Users.IgnoreQueryFilters()
+            .Where(u => u.TenantId == tenantId)
+            .Where(u => u.Username == DemoAdminUsername || u.Username == "demo_hr" || u.Username == "demo_user")
+            .ToListAsync(cancellationToken);
+
+        var employeeIds = demoUsers
+            .Select(u => u.EmployeeId)
+            .Where(id => id.HasValue && id.Value != Guid.Empty)
+            .Select(id => id!.Value)
+            .Distinct()
+            .ToList();
+
+        if (employeeIds.Count == 0) return;
+
+        await EnsureLeaveDemoDataForEmployeesAsync(tenantId, employeeIds, random, today, cancellationToken);
+        await EnsurePayrollDemoDataForEmployeesAsync(tenantId, employeeIds, random, today, cancellationToken);
+    }
+
+    private async Task EnsureLeaveDemoDataForEmployeesAsync(
+        Guid tenantId,
+        List<Guid> employeeIds,
+        Random random,
+        DateOnly today,
+        CancellationToken cancellationToken)
+    {
+        var requiredCodes = new[] { "ANNUAL", "SICK", "PERSONAL", "MATERNITY", "PATERNITY", "COMP" };
+
+        var existingTypes = await context.LeaveTypes.IgnoreQueryFilters()
+            .Where(t => t.TenantId == tenantId)
+            .ToListAsync(cancellationToken);
+        var typeByCode = existingTypes
+            .Where(t => !string.IsNullOrWhiteSpace(t.Code))
+            .ToDictionary(t => t.Code, t => t, StringComparer.OrdinalIgnoreCase);
+
+        var typesToAdd = new List<LeaveType>();
+        if (!typeByCode.ContainsKey("ANNUAL")) typesToAdd.Add(CreateLeaveType(tenantId, "年假", "ANNUAL", true, "#52c41a", allowHalfDay: true));
+        if (!typeByCode.ContainsKey("SICK")) typesToAdd.Add(CreateLeaveType(tenantId, "病假", "SICK", true, "#faad14", allowHalfDay: true, requiresAttachment: true));
+        if (!typeByCode.ContainsKey("PERSONAL")) typesToAdd.Add(CreateLeaveType(tenantId, "事假", "PERSONAL", false, "#1890ff", allowHalfDay: true));
+        if (!typeByCode.ContainsKey("MATERNITY")) typesToAdd.Add(CreateLeaveType(tenantId, "产假", "MATERNITY", true, "#eb2f96", allowHalfDay: false));
+        if (!typeByCode.ContainsKey("PATERNITY")) typesToAdd.Add(CreateLeaveType(tenantId, "陪产假", "PATERNITY", true, "#722ed1", allowHalfDay: false));
+        if (!typeByCode.ContainsKey("COMP")) typesToAdd.Add(CreateLeaveType(tenantId, "调休", "COMP", true, "#13c2c2", allowHalfDay: true));
+
+        if (typesToAdd.Count > 0)
+        {
+            await context.LeaveTypes.AddRangeAsync(typesToAdd, cancellationToken);
+            await context.SaveChangesAsync(cancellationToken);
+            foreach (var t in typesToAdd)
+            {
+                typeByCode[t.Code] = t;
+            }
+        }
+
+        var types = requiredCodes.Select(code => typeByCode[code]).ToList();
+
+        var existingPolicies = await context.LeavePolicies.IgnoreQueryFilters()
+            .Where(p => p.TenantId == tenantId)
+            .ToListAsync(cancellationToken);
+        var policyByType = existingPolicies
+            .GroupBy(p => p.LeaveTypeId)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.BaseQuota).First());
+
+        var policiesToAdd = new List<LeavePolicy>();
+        foreach (var t in types)
+        {
+            if (policyByType.ContainsKey(t.Id)) continue;
+            var p = LeavePolicy.Create(tenantId, t.Id, $"{t.Name}规则", t.Code == "ANNUAL" ? 10m : 5m);
+            SetPrivateProperty(p, "EffectiveAfterDays", t.Code == "ANNUAL" ? 90 : 0);
+            SetPrivateProperty(p, "MaxCarryOverDays", t.Code == "ANNUAL" ? 5m : 0m);
+            SetPrivateProperty(p, "CarryOverExpiryMonths", 6);
+            SetPrivateProperty(p, "AccrualPeriod", t.Code == "ANNUAL" ? AccrualPeriod.Monthly : AccrualPeriod.Yearly);
+            policiesToAdd.Add(p);
+            policyByType[t.Id] = p;
+        }
+
+        if (policiesToAdd.Count > 0)
+        {
+            await context.LeavePolicies.AddRangeAsync(policiesToAdd, cancellationToken);
+            await context.SaveChangesAsync(cancellationToken);
+        }
+
+        var year = today.Year;
+        var existingBalances = await context.LeaveBalances.IgnoreQueryFilters()
+            .Where(b => b.TenantId == tenantId)
+            .Where(b => b.Year == year)
+            .Where(b => employeeIds.Contains(b.EmployeeId))
+            .ToListAsync(cancellationToken);
+
+        var balanceKey = existingBalances.ToDictionary(b => (b.EmployeeId, b.LeaveTypeId), b => b);
+
+        var employeeHireDates = await context.Employees.IgnoreQueryFilters()
+            .Where(e => e.TenantId == tenantId && employeeIds.Contains(e.Id))
+            .Select(e => new { e.Id, e.HireDate })
+            .ToDictionaryAsync(x => x.Id, x => x.HireDate, cancellationToken);
+
+        var balancesToAdd = new List<LeaveBalance>();
+        foreach (var employeeId in employeeIds)
+        {
+            foreach (var t in types)
+            {
+                if (balanceKey.ContainsKey((employeeId, t.Id))) continue;
+                var entitlement = t.Code == "ANNUAL" ? 10m : 5m;
+                var b = LeaveBalance.Create(tenantId, employeeId, t.Id, year, entitlement);
+                if (t.Code == "ANNUAL" && employeeHireDates.TryGetValue(employeeId, out var hire) && hire < today.AddYears(-2))
+                {
+                    b.SetCarryOver(2m);
+                }
+                balancesToAdd.Add(b);
+                balanceKey[(employeeId, t.Id)] = b;
+            }
+        }
+
+        if (balancesToAdd.Count > 0)
+        {
+            await context.LeaveBalances.AddRangeAsync(balancesToAdd, cancellationToken);
+            await context.SaveChangesAsync(cancellationToken);
+        }
+
+        var employeesWithRequests = await context.LeaveRequests.IgnoreQueryFilters()
+            .Where(r => r.TenantId == tenantId)
+            .Where(r => employeeIds.Contains(r.EmployeeId))
+            .Select(r => r.EmployeeId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        var employeesMissingRequests = employeeIds.Except(employeesWithRequests).ToList();
+        if (employeesMissingRequests.Count == 0) return;
+
+        var annual = types.Single(t => t.Code == "ANNUAL");
+        var sick = types.Single(t => t.Code == "SICK");
+
+        var requestsToAdd = new List<LeaveRequest>();
+        foreach (var employeeId in employeesMissingRequests)
+        {
+            var r1 = LeaveRequest.Create(tenantId, employeeId, annual.Id, today.AddDays(7), today.AddDays(8), DayPart.FullDay, DayPart.FullDay, "演示：家庭事务");
+            balanceKey[(employeeId, annual.Id)].AddPending(r1.TotalDays);
+            r1.Approve(Guid.Empty, "同意");
+            balanceKey[(employeeId, annual.Id)].Use(r1.TotalDays);
+            requestsToAdd.Add(r1);
+
+            if (random.NextDouble() < 0.75)
+            {
+                var r2 = LeaveRequest.Create(tenantId, employeeId, sick.Id, today.AddDays(-10), today.AddDays(-10), DayPart.Morning, DayPart.Morning, "演示：就医复诊");
+                balanceKey[(employeeId, sick.Id)].AddPending(r2.TotalDays);
+                r2.Approve(Guid.Empty, "已核对病假证明");
+                balanceKey[(employeeId, sick.Id)].Use(r2.TotalDays);
+                SetAttachments(r2, ["/demo-assets/leave/doctor-note-001.txt"]);
+                requestsToAdd.Add(r2);
+            }
+        }
+
+        await context.LeaveRequests.AddRangeAsync(requestsToAdd, cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("已补全演示假期数据: Employees={EmployeeCount}, Requests+={RequestCount}", employeeIds.Count, requestsToAdd.Count);
+    }
+
+    private async Task EnsurePayrollDemoDataForEmployeesAsync(
+        Guid tenantId,
+        List<Guid> employeeIds,
+        Random random,
+        DateOnly today,
+        CancellationToken cancellationToken)
+    {
+        var start = new DateOnly(today.Year, today.Month, 1).AddMonths(-2);
+        var desiredPeriods = Enumerable.Range(0, 3)
+            .Select(i => start.AddMonths(i))
+            .Select(m => new { m.Year, m.Month, Start = new DateOnly(m.Year, m.Month, 1), End = new DateOnly(m.Year, m.Month, 1).AddMonths(1).AddDays(-1) })
+            .ToList();
+
+        var existingPeriods = await context.PayrollPeriods.IgnoreQueryFilters()
+            .Where(p => p.TenantId == tenantId)
+            .Where(p => desiredPeriods.Select(x => x.Year).Contains(p.Year))
+            .ToListAsync(cancellationToken);
+
+        var periodByYearMonth = existingPeriods.ToDictionary(p => (p.Year, p.Month), p => p);
+        var periodsToAdd = new List<PayrollPeriod>();
+        foreach (var p in desiredPeriods)
+        {
+            if (periodByYearMonth.ContainsKey((p.Year, p.Month))) continue;
+            var payDate = p.End.AddDays(5);
+            var created = PayrollPeriod.Create(tenantId, p.Year, p.Month, p.Start, p.End, payDate);
+            periodsToAdd.Add(created);
+            periodByYearMonth[(p.Year, p.Month)] = created;
+        }
+
+        if (periodsToAdd.Count > 0)
+        {
+            await context.PayrollPeriods.AddRangeAsync(periodsToAdd, cancellationToken);
+            await context.SaveChangesAsync(cancellationToken);
+        }
+
+        var codes = new[] { "BASE", "BONUS", "ALLOW_TRAVEL", "ALLOW_MEAL", "SI_EMP", "HF_EMP", "IIT" };
+        var existingItems = await context.PayrollItems.IgnoreQueryFilters()
+            .Where(i => i.TenantId == tenantId)
+            .ToListAsync(cancellationToken);
+        var itemByCode = existingItems
+            .Where(i => !string.IsNullOrWhiteSpace(i.Code))
+            .ToDictionary(i => i.Code, i => i, StringComparer.OrdinalIgnoreCase);
+
+        var itemsToAdd = new List<PayrollItem>();
+        if (!itemByCode.ContainsKey("BASE")) itemsToAdd.Add(PayrollItem.Create(tenantId, "基本工资", "BASE", PayrollItemType.Earning, CalculationType.Manual));
+        if (!itemByCode.ContainsKey("BONUS")) itemsToAdd.Add(PayrollItem.Create(tenantId, "绩效奖金", "BONUS", PayrollItemType.Earning, CalculationType.Manual));
+        if (!itemByCode.ContainsKey("ALLOW_TRAVEL")) itemsToAdd.Add(PayrollItem.Create(tenantId, "交通补贴", "ALLOW_TRAVEL", PayrollItemType.Earning, CalculationType.Fixed));
+        if (!itemByCode.ContainsKey("ALLOW_MEAL")) itemsToAdd.Add(PayrollItem.Create(tenantId, "餐补", "ALLOW_MEAL", PayrollItemType.Earning, CalculationType.Fixed));
+        if (!itemByCode.ContainsKey("SI_EMP")) itemsToAdd.Add(PayrollItem.Create(tenantId, "个人社保", "SI_EMP", PayrollItemType.Deduction, CalculationType.Manual));
+        if (!itemByCode.ContainsKey("HF_EMP")) itemsToAdd.Add(PayrollItem.Create(tenantId, "个人公积金", "HF_EMP", PayrollItemType.Deduction, CalculationType.Manual));
+        if (!itemByCode.ContainsKey("IIT")) itemsToAdd.Add(PayrollItem.Create(tenantId, "个税", "IIT", PayrollItemType.Tax, CalculationType.Manual));
+
+        foreach (var item in itemsToAdd)
+        {
+            SetPrivateProperty(item, "IsActive", true);
+            itemByCode[item.Code] = item;
+        }
+
+        if (itemsToAdd.Count > 0)
+        {
+            await context.PayrollItems.AddRangeAsync(itemsToAdd, cancellationToken);
+            await context.SaveChangesAsync(cancellationToken);
+        }
+
+        var travelItem = itemByCode["ALLOW_TRAVEL"];
+        var mealItem = itemByCode["ALLOW_MEAL"];
+        var iitItem = itemByCode["IIT"];
+        var baseItem = itemByCode["BASE"];
+
+        SetPrivateProperty(travelItem, "FixedAmount", 300m);
+        SetPrivateProperty(mealItem, "FixedAmount", 600m);
+        SetPrivateProperty(iitItem, "IsTaxable", false);
+        SetPrivateProperty(baseItem, "IsTaxable", true);
+
+        await context.SaveChangesAsync(cancellationToken);
+
+        var periodIds = desiredPeriods.Select(p => periodByYearMonth[(p.Year, p.Month)].Id).ToList();
+        var existingRecords = await context.PayrollRecords.IgnoreQueryFilters()
+            .Where(r => r.TenantId == tenantId)
+            .Where(r => employeeIds.Contains(r.EmployeeId))
+            .Where(r => periodIds.Contains(r.PayrollPeriodId))
+            .ToListAsync(cancellationToken);
+        var recordKey = existingRecords.Select(r => (r.EmployeeId, r.PayrollPeriodId)).ToHashSet();
+
+        var baseSalaryByEmployee = await context.JobHistories.IgnoreQueryFilters()
+            .Where(j => j.TenantId == tenantId)
+            .Where(j => employeeIds.Contains(j.EmployeeId))
+            .Where(j => j.EffectiveEndDate == new DateOnly(9999, 12, 31) && j.CorrectionStatus == null)
+            .GroupBy(j => j.EmployeeId)
+            .Select(g => new { EmployeeId = g.Key, BaseSalary = g.OrderByDescending(x => x.EffectiveStartDate).First().BaseSalary })
+            .ToDictionaryAsync(x => x.EmployeeId, x => x.BaseSalary, cancellationToken);
+
+        var recordsToAdd = new List<PayrollRecord>();
+        foreach (var employeeId in employeeIds)
+        {
+            var baseSalary = baseSalaryByEmployee.TryGetValue(employeeId, out var s) ? s : random.Next(20000, 80000);
+            foreach (var p in desiredPeriods)
+            {
+                var periodId = periodByYearMonth[(p.Year, p.Month)].Id;
+                if (recordKey.Contains((employeeId, periodId))) continue;
+
+                var record = PayrollRecord.Create(tenantId, employeeId, periodId, baseSalary);
+                record.AddDetail(baseItem.Id, "基本工资", PayrollItemType.Earning, baseSalary);
+                if (random.NextDouble() < 0.55)
+                {
+                    record.AddDetail(itemByCode["BONUS"].Id, "绩效奖金", PayrollItemType.Earning, random.Next(500, 8000));
+                }
+                record.AddDetail(travelItem.Id, "交通补贴", PayrollItemType.Earning, 300);
+                record.AddDetail(mealItem.Id, "餐补", PayrollItemType.Earning, 600);
+
+                var si = Math.Round(baseSalary * 0.10m, 2);
+                var hf = Math.Round(baseSalary * 0.07m, 2);
+                var tax = Math.Round(Math.Max(0, (baseSalary - 5000m) * 0.03m), 2);
+
+                record.AddDetail(itemByCode["SI_EMP"].Id, "个人社保", PayrollItemType.Deduction, si);
+                record.AddDetail(itemByCode["HF_EMP"].Id, "个人公积金", PayrollItemType.Deduction, hf);
+                record.AddDetail(iitItem.Id, "个税", PayrollItemType.Tax, tax);
+
+                record.Calculate();
+                record.Approve();
+                if (random.NextDouble() < 0.65)
+                {
+                    record.MarkAsPaid();
+                }
+
+                recordsToAdd.Add(record);
+                recordKey.Add((employeeId, periodId));
+            }
+        }
+
+        if (recordsToAdd.Count == 0) return;
+
+        await context.PayrollRecords.AddRangeAsync(recordsToAdd, cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("已补全演示薪资数据: Employees={EmployeeCount}, Records+={RecordCount}", employeeIds.Count, recordsToAdd.Count);
     }
 
     private async Task EnsureAttendanceDemoDataAsync(
