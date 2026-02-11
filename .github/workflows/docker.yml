@@ -12,7 +12,6 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAMESPACE: ${{ toLower(github.repository_owner) }}
 
 jobs:
   build-and-push:
@@ -32,6 +31,11 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
 
+      - name: Compute image namespace
+        id: image_namespace
+        shell: bash
+        run: echo "value=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+
       - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -41,7 +45,7 @@ jobs:
       - id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.image }}
+          images: ${{ env.REGISTRY }}/${{ steps.image_namespace.outputs.value }}/${{ matrix.image }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,format=long
@@ -58,10 +62,38 @@ jobs:
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
-    if: ${{ secrets.DEPLOY_HOST != '' && secrets.DEPLOY_USER != '' && secrets.DEPLOY_KEY != '' && secrets.DEPLOY_PATH != '' }}
     steps:
+      - name: Determine deploy readiness
+        id: deploy_ready
+        shell: bash
+        run: |
+          required=(DEPLOY_HOST DEPLOY_USER DEPLOY_KEY DEPLOY_PATH)
+          missing=0
+          for key in "${required[@]}"; do
+            if [[ -z "${!key:-}" ]]; then
+              missing=1
+            fi
+          done
+          if [[ "$missing" == "1" ]]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+
+      - name: Compute image namespace
+        id: image_namespace
+        if: ${{ steps.deploy_ready.outputs.ready == 'true' }}
+        shell: bash
+        run: echo "value=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
+        if: ${{ steps.deploy_ready.outputs.ready == 'true' }}
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
@@ -70,7 +102,7 @@ jobs:
             set -e
             cd "${{ secrets.DEPLOY_PATH }}"
             docker login ${{ env.REGISTRY }} -u "${{ github.actor }}" -p "${{ secrets.GITHUB_TOKEN }}"
-            export IMAGE_NAMESPACE="${{ env.IMAGE_NAMESPACE }}"
+            export IMAGE_NAMESPACE="${{ steps.image_namespace.outputs.value }}"
             export IMAGE_TAG="${{ github.sha }}"
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
